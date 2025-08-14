@@ -7,13 +7,14 @@ The project is split into **client** (Vite + React + Tailwind CSS) and **server*
 
 ## Project Structure
 Root/
+```bash
 │
 ├── client/ # Frontend (Vite + React + Tailwind CSS)
 ├── server/ # Backend (Node.js + Express + PostgreSQL)
 ├── package.json # Root scripts for running both client & server
 ├── .gitignore # Ignored files/folders for Git
 └── README.md # This file
-
+```
 
 ---
 
