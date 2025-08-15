@@ -42,10 +42,21 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: 'Invalid Credentials' });
 
     const payload = { user: { id: user.id } };
+
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
       res.json({ token });
     });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.cookie('token', token, {
+      httpOnly: true, // JS cannot access
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
+      sameSite: 'lax', // mitigate CSRF
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+    res.json({ message: 'Logged in successfully' });
+
   } catch (error) {
     console.error(error.message);
     res.status(500).send('Server error');
@@ -53,14 +64,22 @@ exports.login = async (req, res) => {
 };
 
 exports.getMe = async (req, res) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
   try {
-    const user = await User.findByPk(req.user.id, { attributes: ['id', 'email', 'createdAt'] });
+    // const user = await User.findByPk(req.user.id, { attributes: ['id', 'email', 'createdAt'] });
+    // res.json(user);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findByPk(decoded.user.id, { attributes: ['id', 'email', 'createdAt'] });
     res.json(user);
+
   } catch (error) {
     console.error(error.message);
-    res.status(500).send('Server error');
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
+
 exports.updatePassword = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
