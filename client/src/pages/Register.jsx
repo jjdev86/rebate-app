@@ -1,41 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../api';
 
 const Register = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      // POST to backend, cookie is automatically sent
+      const res = await api.post('/auth/register', { email, password });
+      navigate('/dashboard');
 
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        navigate('/dashboard');
-      } else {
-        alert(data.message || 'Registration failed');
-      }
     } catch (err) {
       console.error(err);
-      alert('Something went wrong');
+      if (err.response && err.response.data) {
+        setError(err.response.data.message || 'Registration failed');
+      } else {
+        console.log(err);
+        setError('Server error');
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <form
-        className="bg-white p-6 rounded shadow-md w-full max-w-sm"
-        onSubmit={handleSubmit}
-      >
+      <form className="bg-white p-6 rounded shadow-md w-full max-w-sm" onSubmit={handleSubmit}>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
         <h2 className="text-2xl font-bold mb-4 text-center">Register</h2>
 
         <input
