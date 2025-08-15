@@ -2,7 +2,8 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 module.exports = function (req, res, next) {
-  const token = req.header('Authorization')?.split(' ')[1];
+  // Get token from cookie instead of header
+  const token = req.cookies.token;
   if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
 
   try {
