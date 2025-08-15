@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../api';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -7,31 +8,21 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      try {
+        const res = await api.get('/auth/me'); // 👈 cookie is sent automatically
+        setUser(res.data);
+      } catch (err) {
+        // Token invalid or missing, so redirect back to login
+        console.log(err)
         navigate('/');
-        return;
       }
-
-      const res = await fetch('http://localhost:5000/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/');
-        return;
-      }
-
-      const data = await res.json();
-      if (res.ok) setUser(data);
     };
 
     fetchProfile();
   }, [navigate]);
 
-  const handleSignOut = () => {
-    localStorage.removeItem('token');
+  const handleSignOut = async () => {
+    await api.post('/auth/logout');
     navigate('/');
   };
 
