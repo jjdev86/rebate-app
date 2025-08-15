@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config({path: './server/.env'});
 const { sequelize } = require('./models');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 
 const authRoutes = require('./routes/auth');
 const docsRoutes = require('./routes/docs');
@@ -15,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev')); // Logging middleware
-
+app.use(cookieParser()); // Middleware to parse cookies
 app.use('/api/auth', authRoutes);
 app.use('/api/docs', docsRoutes);
 app.use('/api/notifications', notificationsRoutes);
