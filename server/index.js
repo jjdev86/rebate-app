@@ -4,10 +4,10 @@ require('dotenv').config({path: './server/.env'});
 const { sequelize } = require('./models');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-
 const authRoutes = require('./routes/auth');
 const docsRoutes = require('./routes/docs');
 const notificationsRoutes = require('./routes/notifications');
+const configRoutes = require('./routes/config');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +23,7 @@ app.use(cookieParser()); // Middleware to parse cookies
 app.use('/api/auth', authRoutes);
 app.use('/api/docs', docsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/config', configRoutes);
 
 app.get('/', (req, res) => {
   res.send('API Running');
