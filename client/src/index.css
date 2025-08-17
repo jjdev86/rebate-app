@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* tailwind.css (global) */
+.label {
+  @apply text-sm font-medium text-[#1E2A5A];
+}
+
+.input {
+  @apply w-full border border-[#E0E0E0] py-2 px-3 rounded-md;
+}
+
+.btn-primary {
+  @apply bg-[#0052CC] text-white px-4 py-2 rounded hover:bg-[#0043a9] transition;
+}
+
+.btn-secondary {
+  @apply bg-white border border-gray-300 text-[#1E2A5A] px-4 py-2 rounded hover:bg-gray-200 transition;
+}
+
+
