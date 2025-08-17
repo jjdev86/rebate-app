@@ -1,3 +1,6 @@
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
+
 module.exports = (sequelize, DataTypes) => {
   const Product = sequelize.define('Product', {
     id: {
