@@ -2,6 +2,7 @@ const sequelize = require('../config/database');
 const User = require('./User');
 const Doc = require('./Doc');
 const Notification = require('./Notification');
+const Product = require('./Product');
 
 // Define associations if needed
 User.hasMany(Doc, { foreignKey: 'userId' });
@@ -14,5 +15,6 @@ module.exports = {
   sequelize,
   User,
   Doc,
-  Notification
+  Notification,
+  Product
 };
