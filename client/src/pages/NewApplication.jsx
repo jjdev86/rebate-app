@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
+const steps = ['Project Details', 'Equipment Details', 'Review & Submit'];
+
 const NewApplication = () => {
   const [step, setStep] = useState(1);
-
-  // Form Values
   const [form, setForm] = useState({
     customerName: '',
     customerEmail: '',
@@ -18,7 +18,6 @@ const NewApplication = () => {
     files: []
   });
 
-  // Dropdown option data
   const [options, setOptions] = useState({
     equipmentTypes: [],
     models: [],
@@ -27,142 +26,122 @@ const NewApplication = () => {
 
   const navigate = useNavigate();
 
+  // Load dropdown options
   useEffect(() => {
     const fetchOptions = async () => {
-      try {
-        const res = await api.get('/config/application-options'); // 👈
-        setOptions(res.data);
-      } catch (err) {
-        console.error('Failed to load option data');
-      }
+      const res = await api.get('/config/application-options');
+      setOptions(res.data);
     };
-
     fetchOptions();
   }, []);
-
-  const nextStep = () => setStep(step + 1);
-  const prevStep = () => setStep(step - 1);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Final submit
+  const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
+
   const handleSubmit = async () => {
-    try {
-      await api.post('/applications', form); // you can attach S3 files later
-      navigate('/dashboard');
-    } catch (err) {
-      console.error(err);
-      alert('Error submitting application');
-    }
+    await api.post('/applications', form);
+    navigate('/dashboard');
   };
 
-  // ------------------------------
-  // Step UI (simple switch-case)
-  // ------------------------------
   const renderStep = () => {
     switch (step) {
       case 1:
         return (
           <>
-            <h2 className="text-xl font-semibold mb-4">Project Details</h2>
+            <h2 className="text-lg font-semibold mb-4">Project Details</h2>
             <input
               name="customerName"
+              className="input mb-3"
               placeholder="Customer Name"
-              className="w-full border p-2 rounded mb-3"
               value={form.customerName}
               onChange={handleChange}
             />
             <input
               name="customerEmail"
+              className="input mb-3"
               placeholder="Customer Email"
-              className="w-full border p-2 rounded mb-3"
               value={form.customerEmail}
               onChange={handleChange}
             />
             <input
               name="claimNumber"
+              className="input"
               placeholder="Claim Number"
-              className="w-full border p-2 rounded"
               value={form.claimNumber}
               onChange={handleChange}
             />
-            <button onClick={nextStep} className="mt-4 w-full bg-blue-600 text-white py-2 rounded">
-              Next
-            </button>
+            <button onClick={nextStep} className="btn-primary mt-4 w-full">Next</button>
           </>
         );
 
       case 2:
         return (
           <>
-            <h2 className="text-xl font-semibold mb-4">Equipment Details</h2>
-            <select
-              name="equipmentType"
-              className="w-full p-2 border rounded mb-3"
-              value={form.equipmentType}
-              onChange={handleChange}
-            >
+            <h2 className="text-lg font-semibold mb-4">Equipment Details</h2>
+            <select name="equipmentType" value={form.equipmentType} onChange={handleChange} className="input mb-3">
               <option value="">Select equipment type</option>
-              {options.equipmentTypes.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+              {options.equipmentTypes.map((o) => (
+                <option key={o} value={o}>{o}</option>
               ))}
             </select>
-
-            <select
-              name="model"
-              className="w-full p-2 border rounded mb-3"
-              value={form.model}
-              onChange={handleChange}
-            >
+            <select name="model" value={form.model} onChange={handleChange} className="input mb-3">
               <option value="">Select model</option>
-              {options.models.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+              {options.models.map((o) => (
+                <option key={o} value={o}>{o}</option>
               ))}
             </select>
-
-            <select
-              name="efficiencyRating"
-              className="w-full p-2 border rounded mb-3"
-              value={form.efficiencyRating}
-              onChange={handleChange}
-            >
+            <select name="efficiencyRating" value={form.efficiencyRating} onChange={handleChange} className="input">
               <option value="">Select efficiency</option>
-              {options.efficiencyRatings.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+              {options.efficiencyRatings.map((o) => (
+                <option key={o} value={o}>{o}</option>
               ))}
             </select>
-
             <div className="flex justify-between mt-4">
-              <button onClick={prevStep} className="bg-gray-200 py-2 px-4 rounded">Back</button>
-              <button onClick={nextStep} className="bg-blue-600 text-white py-2 px-4 rounded">Next</button>
+              <button onClick={prevStep} className="btn-secondary">Back</button>
+              <button onClick={nextStep} className="btn-primary">Next</button>
             </div>
           </>
         );
 
       case 3:
+      default:
         return (
           <>
-            <h2 className="text-xl font-semibold mb-4">Review & Submit</h2>
-            <pre className="bg-gray-50 p-3 rounded text-sm mb-4">
-              {JSON.stringify(form, null, 2)}
-            </pre>
+            <h2 className="text-lg font-semibold mb-4">Review & Submit</h2>
+            <pre className="bg-gray-100 p-3 rounded text-sm mb-4">{JSON.stringify(form, null, 2)}</pre>
             <div className="flex justify-between">
-              <button onClick={prevStep} className="bg-gray-200 py-2 px-4 rounded">Back</button>
-              <button onClick={handleSubmit} className="bg-green-600 text-white py-2 px-4 rounded">Submit</button>
+              <button onClick={prevStep} className="btn-secondary">Back</button>
+              <button onClick={handleSubmit} className="btn-primary">Submit</button>
             </div>
           </>
         );
-
-      default:
-        return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg p-6 rounded shadow">
-        {renderStep()}
+    <div className="min-h-screen bg-gray-50 p-4 flex justify-center">
+      <div className="bg-white max-w-3xl w-full flex rounded shadow overflow-hidden">
+
+        {/* LEFT – Steps */}
+        <div className="w-1/3 border-r p-4 hidden sm:block">
+          <ul className="space-y-3">
+            {steps.map((label, index) => (
+              <li
+                key={label}
+                className={`${step === index + 1 ? 'font-semibold text-gray-800' : 'text-gray-400'}`}
+              >
+                {index + 1}. {label}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* RIGHT – Step Content */}
+        <div className="flex-1 p-6">{renderStep()}</div>
+
       </div>
     </div>
   );
