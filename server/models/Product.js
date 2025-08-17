@@ -1,8 +1,11 @@
+// server/models/Product.js
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/database');
 
-module.exports = (sequelize, DataTypes) => {
-  const Product = sequelize.define('Product', {
+class Product extends Model {}
+
+Product.init(
+  {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -16,8 +19,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-  });
+  },
+  {
+    sequelize,
+    modelName: 'Product',
+    tableName: 'products',
+    timestamps: true,
+  }
+);
 
-  return Product;
-};
-// This code defines a Sequelize model for a Product with fields for id, type, and modelNumber.
+module.exports = Product;
