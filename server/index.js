@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const docsRoutes = require('./routes/docs');
 const notificationsRoutes = require('./routes/notifications');
 const productRoutes = require('./routes/products');
+const applicationRoutes = require('./routes/applications');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/docs', docsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/config', productRoutes);
+app.use('/api/applications', applicationRoutes);
 
 app.get('/', (req, res) => {
   res.send('API Running');
