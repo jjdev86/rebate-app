@@ -7,8 +7,8 @@ class ApplicationFile extends Model {}
 ApplicationFile.init(
   {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
       primaryKey: true,
     },
     applicationId: {
@@ -23,6 +23,7 @@ ApplicationFile.init(
     filename:  { type: DataTypes.STRING, allowNull: false },
     mimeType:  { type: DataTypes.STRING, allowNull: true  },
     sizeBytes: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+    isDeleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
   },
   {
     sequelize,
