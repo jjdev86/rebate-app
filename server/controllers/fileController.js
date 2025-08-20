@@ -1,54 +1,89 @@
 // controllers/fileController.js
-const { getPresignedPutUrl, randomKey } = require('../config/s3');
-const { Application, ApplicationFile } = require('../models');
-const path = require('path');
+const { getPresignedPutUrl, randomKey } = require("../config/s3");
+const { Application, ApplicationFile } = require("../models");
+const path = require("path");
 
 const BUCKET = process.env.S3_BUCKET;
 const PUBLIC_BASE = process.env.S3_PUBLIC_BASE_URL;
-const MAX_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '25', 10);
+
+const MAX_MB = parseInt(process.env.MAX_FILE_SIZE_MB || "25", 10);
 const ALLOWED = [
-  'application/pdf',
-  'image/png', 'image/jpeg', 'image/webp',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/msword'
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/msword",
 ];
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) =>
+      setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
 
 exports.presignUpload = async (req, res, next) => {
   try {
     const { applicationId } = req.params;
     const { filename, contentType, size } = req.body;
 
-    // Basic guards
-    if (!filename || !contentType || typeof size !== 'number') {
-      return res.status(400).json({ error: 'filename, contentType, size required' });
+    // 🔒 Require auth:
+    if (!req.user || !req.user.id) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: user context missing" });
     }
-    if (size > MAX_MB * 1024 * 1024) {
-      return res.status(413).json({ error: `Max file size is ${MAX_MB} MB` });
-    }
-    if (!ALLOWED.includes(contentType)) {
-      return res.status(415).json({ error: 'Unsupported file type' });
+    const userId = req.user.id;
+
+    // Basic input checks (your express-validator should already ensure these)
+    if (!filename || !contentType || typeof size !== "number") {
+      return res
+        .status(400)
+        .json({ error: "filename, contentType, size required" });
     }
 
-    // Ensure application belongs to the authed user
-    const userId = req.user?.id; // assuming you set req.user from auth middleware
-    const app = await Application.findOne({ where: { id: applicationId, userId } });
-    if (!app) return res.status(404).json({ error: 'Application not found' });
-
-    const ext = path.extname(filename) || '';
-    const key = `applications/${applicationId}/${randomKey('file_')}${ext}`;
-
-    const uploadUrl = await getPresignedPutUrl({
-      bucket: BUCKET,
-      key,
-      contentType,
-      expiresIn: 60 // seconds
+    // Verify application ownership
+    const app = await Application.findOne({
+      where: { id: applicationId, userId },
     });
+    if (!app) {
+      return res
+        .status(404)
+        .json({ error: "Application not found or not owned by user" });
+    }
 
-    // Where the file will be publicly accessible if you proxy it; for now store S3 path.
-    const publicUrl = `${PUBLIC_BASE}/${key}`;
+    // ... generate key, get presigned URL, respond ...
+    // Generate key under applications/:applicationId/
+    const ext = path.extname(filename) || "";
+    const key = `applications/${applicationId}/${randomKey("file_")}${ext}`;
+    // Presign S3 PUT
+    const tS3 = Date.now();
+    const uploadUrl = await withTimeout(
+      getPresignedPutUrl({
+        bucket: process.env.S3_BUCKET,
+        key,
+        contentType,
+        expiresIn: 60, // seconds
+      }),
+      6000,
+      "S3 presign"
+    );
+    // console.log('S3 presign ms:', Date.now() - tS3);
 
-    return res.json({ uploadUrl, key, publicUrl });
+    const publicUrl = `${process.env.S3_PUBLIC_BASE_URL}/${key}`;
+    // console.log('Total presign handler ms:', Date.now() - t0);
+
+    return res.json({ uploadUrl, s3Key: key, publicUrl });
   } catch (err) {
+    // Add a bit of context to the server logs
+    console.error("presignUpload error", {
+      userPresent: !!req.user,
+      userId: req.user?.id,
+      applicationId: req.params?.applicationId,
+      err,
+    });
     next(err);
   }
 };
@@ -56,24 +91,28 @@ exports.presignUpload = async (req, res, next) => {
 exports.createApplicationFile = async (req, res, next) => {
   try {
     const { applicationId } = req.params;
-    const { key, url, filename, contentType, size } = req.body;
+    const { s3Key, url, filename, contentType, size } = req.body;
 
-    if (!key || !filename || !contentType || typeof size !== 'number') {
-      return res.status(400).json({ error: 'key, filename, contentType, size required' });
+    if (!s3Key || !filename || !contentType || typeof size !== "number") {
+      return res
+        .status(400)
+        .json({ error: "s3Key, filename, contentType, size required" });
     }
 
     // Verify application ownership again
     const userId = req.user?.id;
-    const app = await Application.findOne({ where: { id: applicationId, userId } });
-    if (!app) return res.status(404).json({ error: 'Application not found' });
+    const app = await Application.findOne({
+      where: { id: applicationId, userId },
+    });
+    if (!app) return res.status(404).json({ error: "Application not found" });
 
     const record = await ApplicationFile.create({
       applicationId,
-      key,
-      url: url || `${PUBLIC_BASE}/${key}`,
+      s3Key,
+      url: url || `${PUBLIC_BASE}/${s3Key}`,
       filename,
       contentType,
-      sizeBytes: size
+      sizeBytes: size,
     });
 
     return res.status(201).json(record);
@@ -87,12 +126,14 @@ exports.listApplicationFiles = async (req, res, next) => {
     const { applicationId } = req.params;
     const userId = req.user?.id;
 
-    const app = await Application.findOne({ where: { id: applicationId, userId } });
-    if (!app) return res.status(404).json({ error: 'Application not found' });
+    const app = await Application.findOne({
+      where: { id: applicationId, userId },
+    });
+    if (!app) return res.status(404).json({ error: "Application not found" });
 
     const files = await ApplicationFile.findAll({
       where: { applicationId },
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]],
     });
 
     res.json(files);
@@ -105,17 +146,30 @@ exports.deleteApplicationFile = async (req, res, next) => {
   try {
     const { applicationId, fileId } = req.params;
     const userId = req.user?.id;
+    console.log("deleteApplicationFile params", {
+      applicationId,
+      fileId,
+      userId,
+      types: { appId: typeof applicationId, fileId: typeof fileId },
+    });
+    const app = await Application.findOne({
+      where: { id: applicationId, userId },
+    });
+    if (!app) return res.status(404).json({ error: "Application not found" });
 
-    const app = await Application.findOne({ where: { id: applicationId, userId } });
-    if (!app) return res.status(404).json({ error: 'Application not found' });
+    const rec = await ApplicationFile.findOne({
+      where: { id: fileId, applicationId },
+    });
+    if (!rec) return res.status(404).json({ error: "File not found" });
 
-    const rec = await ApplicationFile.findOne({ where: { id: fileId, applicationId } });
-    if (!rec) return res.status(404).json({ error: 'File not found' });
+    /// Idempotent soft-delete: if already deleted, still return 204
+    if (!rec.isDeleted) {
+      await rec.update({ isDeleted: true });
+    }
 
-    // Soft delete DB row; optional: also delete from S3 async (can add a queue)
-    await rec.destroy();
     res.status(204).end();
   } catch (err) {
     next(err);
   }
 };
+// This file handles file uploads for applications, including presigning S3 URLs and managing application files.
