@@ -1,49 +1,36 @@
 // routes/applicationFiles.js
 const express = require('express');
-const { body } = require('express-validator');
 const {
   presignUpload,
   createApplicationFile,
   listApplicationFiles,
   deleteApplicationFile
 } = require('../controllers/fileController');
-const validate = require('../middleware/validate'); // your express-validator result handler
-const requireAuth = require('../middleware/requireAuth'); // sets req.user
+const validate = require('../middleware/fileValidate');
+const requireAuth = require('../middleware/authMiddleware');
+
+const {
+  presignUploadRules,
+  createFileRules,
+  listFilesRules,
+  deleteFileRules
+} = require('../validators/applicationFileValidation');
 
 const router = express.Router({ mergeParams: true });
 
 router.use(requireAuth);
 
 // GET /api/applications/:applicationId/files
-router.get('/', listApplicationFiles);
+router.get('/', listFilesRules, validate, listApplicationFiles);
 
 // POST /api/applications/:applicationId/files/presign
-router.post(
-  '/presign',
-  [
-    body('filename').isString().notEmpty(),
-    body('contentType').isString().notEmpty(),
-    body('size').isInt({ min: 1 })
-  ],
-  validate,
-  presignUpload
-);
+router.post('/presign', presignUploadRules, validate, presignUpload);
 
-// POST /api/applications/:applicationId/files (create DB row after successful S3 PUT)
-router.post(
-  '/',
-  [
-    body('key').isString().notEmpty(),
-    body('filename').isString().notEmpty(),
-    body('contentType').isString().notEmpty(),
-    body('size').isInt({ min: 1 }),
-    body('url').optional().isString()
-  ],
-  validate,
-  createApplicationFile
-);
+// POST /api/applications/:applicationId/files
+router.post('/', createFileRules, validate, createApplicationFile);
 
 // DELETE /api/applications/:applicationId/files/:fileId
-router.delete('/:fileId', deleteApplicationFile);
+router.delete('/:fileId', deleteFileRules, validate, deleteApplicationFile);
 
 module.exports = router;
+// This file defines routes for handling application files, including listing, uploading, and deleting files.
