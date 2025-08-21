@@ -3,6 +3,8 @@ const User = require('./User');
 const Doc = require('./Doc');
 const Notification = require('./Notification');
 const Product = require('./Product');
+const Application = require('./Application');
+const ApplicationFile = require('./ApplicationFile');
 
 // Define associations if needed
 User.hasMany(Doc, { foreignKey: 'userId' });
@@ -16,5 +18,7 @@ module.exports = {
   User,
   Doc,
   Notification,
-  Product
+  Product,
+  Application,
+  ApplicationFile
 };
