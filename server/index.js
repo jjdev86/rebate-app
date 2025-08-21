@@ -18,15 +18,18 @@ app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev')); // Logging middleware
 app.use(cookieParser()); // Middleware to parse cookies
+
 app.use('/api/auth', authRoutes);
 app.use('/api/docs', docsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/config', productRoutes);
 app.use('/api/applications', applicationRoutes);
+
 app.use('/api/applications/:applicationId/files', applicationFiles);
 
 app.get('/', (req, res) => {
