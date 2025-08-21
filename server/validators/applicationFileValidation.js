@@ -9,9 +9,8 @@ const applicationIdParam = [
 ];
 
 const fileIdParam = [
-  param('fileId')
-    .exists().withMessage('fileId param is required')
-    .isUUID(4).withMessage('fileId must be a UUID v4')
+  // fileId is an integer ID in the database
+  param('fileId').toInt().isInt({ min: 1 }).withMessage('fileId must be a positive integer')
 ];
 
 // Common field rules
