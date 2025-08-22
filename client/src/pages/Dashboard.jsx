@@ -10,10 +10,9 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get('/auth/me'); // 👈 cookie is sent automatically
+        const res = await api.get('/auth/me');
         setUser(res.data);
       } catch (err) {
-        // Token invalid or missing, so redirect back to login
         console.log(err)
         navigate('/');
       }
@@ -38,6 +37,13 @@ const Dashboard = () => {
         className="mt-6 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
       >
         Sign Out
+      </button>
+
+      <button
+        onClick={() => navigate('/new-application')}
+        className="mt-4 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+      >
+        Start a new application
       </button>
     </div>
   );
