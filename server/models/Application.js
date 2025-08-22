@@ -14,16 +14,25 @@ Application.init(
     },
 
     // Customer fields (per your spec)
-    customerFirstName: { type: DataTypes.STRING, allowNull: false },
-    customerLastName:  { type: DataTypes.STRING, allowNull: false },
-    installAddress:    { type: DataTypes.STRING, allowNull: false },
-    email:             { type: DataTypes.STRING, allowNull: false, validate: { isEmail: true } },
+    customerFirstName: { type: DataTypes.STRING, allowNull: true },
+    customerLastName:  { type: DataTypes.STRING, allowNull: true },
+    installAddress:    { type: DataTypes.STRING, allowNull: true },
+    installZip:        { type: DataTypes.STRING, allowNull: true },
+    installCity:       { type: DataTypes.STRING, allowNull: true },
+    installState:      { type: DataTypes.STRING, allowNull: true },
+    mailingAddress:    { type: DataTypes.STRING, allowNull: true },
+    mailingZip:        { type: DataTypes.STRING, allowNull: true },
+    mailingCity:       { type: DataTypes.STRING, allowNull: true },
+  mailingState:      { type: DataTypes.STRING, allowNull: true },
+  isSameAsInstall:   { type: DataTypes.BOOLEAN, allowNull: true },
+    email:             { type: DataTypes.STRING, allowNull: true, validate: { isEmail: true } },
     phoneNumber:       { type: DataTypes.STRING, allowNull: true,  validate: { is: /^[0-9\-\+\s\(\)]*$/i } },
+
 
     // Link to product (Heat Pump Water Heater / Thermostats)
     productId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       references: { model: 'products', key: 'id' },
     },
 
