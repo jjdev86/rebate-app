@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useUser } from '../context/useUser';
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 
@@ -10,10 +11,22 @@ const steps = [
 ];
 
 const NewApplication = () => {
+  const { user } = useUser();
   const [step, setStep] = useState(1);
+  const [sameAsInstall, setSameAsInstall] = useState(false);
   const [form, setForm] = useState({
-    customerName: "",
-    customerEmail: "",
+    customerFirstName: user?.firstName || "",
+    customerLastName: user?.lastName || "",
+    email: user?.email || "",
+    installAddress: "",
+    installZip: "",
+    installCity: "",
+    installState: "",
+    mailingAddress: "",
+    mailingZip: "",
+    mailingCity: "",
+    mailingState: "",
+    phoneNumber: user?.phoneNumber || "",
     claimNumber: "",
     equipmentType: "",
     model: "",
@@ -25,20 +38,107 @@ const NewApplication = () => {
     models: [],
     efficiencyRatings: [],
   });
-
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchOptions = async () => {
-      const res = await api.get("/config/application-options");
-      setOptions(res.data);
+      try {
+        const response = await api.get("/config/application-options");
+        setOptions(response.data);
+      } catch (error) {
+        console.error("Error fetching product options:", error);
+      }
     };
     fetchOptions();
   }, []);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-  const nextStep = () => setStep((prev) => prev + 1);
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({
+        ...prev,
+        customerFirstName: user.firstName || "",
+        customerLastName: user.lastName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+      }));
+    }
+  }, [user]);
+
+  const handleChange = (e) => {
+    let { name, value } = e.target;
+
+    // Special handling for phone number to format it
+    if (name === "phoneNumber") {
+      // Remove all non-digits
+      value = value.replace(/\D/g, '');
+      // Only allow up to 10 digits
+      if (value.length > 10) value = value.slice(0, 10);
+      // Format as (xxx) xxx-xxxx
+      if (value.length > 0) {
+        value = `(${value}`;
+        if (value.length > 4) value = value.slice(0, 4) + ') ' + value.slice(4);
+        if (value.length > 9) value = value.slice(0, 9) + '-' + value.slice(9);
+      }
+    }
+
+    // Cap state fields to 2 characters
+    if (name === "installState" || name === "mailingState") {
+      value = value.slice(0, 2);
+    }
+
+    setForm({ ...form, [name]: value });
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  // Validation for step 1 fields (except claimNumber)
+  const validateStep1 = () => {
+    const newErrors = {};
+    if (!form.customerFirstName.trim()) newErrors.customerFirstName = 'First name is required';
+    if (!form.customerLastName.trim()) newErrors.customerLastName = 'Last name is required';
+    if (!form.email.trim()) newErrors.email = 'Customer email is required';
+    // Stricter email regex
+    else if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(form.email)) newErrors.email = 'Invalid email format';
+    if (!form.installAddress.trim()) newErrors.installAddress = 'Install address is required';
+    if (!form.installCity.trim()) newErrors.installCity = 'Install city is required';
+    if (!form.installState.trim()) newErrors.installState = 'Install state is required';
+    if (!form.installZip.trim()) newErrors.installZip = 'Install zip is required';
+    if (!form.mailingAddress.trim()) newErrors.mailingAddress = 'Mailing address is required';
+    if (!form.mailingCity.trim()) newErrors.mailingCity = 'Mailing city is required';
+    if (!form.mailingState.trim()) newErrors.mailingState = 'Mailing state is required';
+    if (!form.mailingZip.trim()) newErrors.mailingZip = 'Mailing zip is required';
+    if (!form.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
+    // Phone number: (123) 456-7890
+    else if (!/^\(\d{3}\) \d{3}-\d{4}$/.test(form.phoneNumber)) newErrors.phoneNumber = 'Format: (123) 456-7890';
+    return newErrors;
+  };
+
+  const validateStep2 = () => {
+    const newErrors = {};
+    if (!form.equipmentType) newErrors.equipmentType = 'Equipment type is required';
+    if (!form.model) newErrors.model = 'Model is required';
+    return newErrors;
+  };
+
+  const validateStep3 = () => {
+    const newErrors = {};
+    if (!form.files || form.files.length === 0) newErrors.files = 'At least one document must be uploaded';
+    return newErrors;
+  };
+
+  const nextStep = () => {
+    let validationErrors = {};
+    if (step === 1) {
+      validationErrors = validateStep1();
+    } else if (step === 2) {
+      validationErrors = validateStep2();
+    } else if (step === 3) {
+      validationErrors = validateStep3();
+    }
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+    setStep((prev) => prev + 1);
+  };
   const prevStep = () => setStep((prev) => prev - 1);
 
   const handleSubmit = async () => {
@@ -63,33 +163,185 @@ const NewApplication = () => {
     }
   };
 
+  console.log("User", user);
   const renderStepContent = () => {
     switch (step) {
       case 1:
         return (
           <>
-            <label className="label">Customer Name</label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="label">First Name</label>
+                <input
+                  name="customerFirstName"
+                  className="input mt-1"
+                  value={form.customerFirstName}
+                  onChange={handleChange}
+                />
+                {errors.customerFirstName && <div className="text-red-500 text-xs mt-1">{errors.customerFirstName}</div>}
+              </div>
+              <div className="flex-1">
+                <label className="label">Last Name</label>
+                <input
+                  name="customerLastName"
+                  className="input mt-1"
+                  value={form.customerLastName}
+                  onChange={handleChange}
+                />
+                {errors.customerLastName && <div className="text-red-500 text-xs mt-1">{errors.customerLastName}</div>}
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <div className="flex-1">
+                <label className="label">Email</label>
+                <input
+                  name="email"
+                  className="input mt-1"
+                  value={form.email}
+                  onChange={handleChange}
+                  readOnly
+                />
+                {errors.email && <div className="text-red-500 text-xs mt-1">{errors.email}</div>}
+              </div>
+              <div className="flex-1">
+                <label className="label">Phone Number</label>
+                <input
+                  name="phoneNumber"
+                  className="input mt-1"
+                  value={form.phoneNumber}
+                  onChange={handleChange}
+                />
+                {errors.phoneNumber && <div className="text-red-500 text-xs mt-1">{errors.phoneNumber}</div>}
+              </div>
+            </div>
+            {/* Install Address Fields */}
+            <label className="label mt-4">Install Address</label>
             <input
-              name="customerName"
+              name="installAddress"
               className="input mt-1"
-              value={form.customerName}
+              value={form.installAddress}
               onChange={handleChange}
             />
+            {errors.installAddress && <div className="text-red-500 text-xs mt-1">{errors.installAddress}</div>}
+            <div className="flex gap-2 mt-2">
+              <div className="flex-1">
+                <label className="label">City</label>
+                <input
+                  name="installCity"
+                  className="input mt-1"
+                  value={form.installCity}
+                  onChange={handleChange}
+                />
+                {errors.installCity && <div className="text-red-500 text-xs mt-1">{errors.installCity}</div>}
+              </div>
+              <div className="flex-1">
+                <label className="label">State</label>
+                <input
+                  name="installState"
+                  className="input mt-1"
+                  value={form.installState}
+                  onChange={handleChange}
+                />
+                {errors.installState && <div className="text-red-500 text-xs mt-1">{errors.installState}</div>}
+              </div>
+              <div className="flex-1">
+                <label className="label">Zip</label>
+                <input
+                  name="installZip"
+                  className="input mt-1"
+                  value={form.installZip}
+                  onChange={handleChange}
+                />
+                {errors.installZip && <div className="text-red-500 text-xs mt-1">{errors.installZip}</div>}
+              </div>
+            </div>
 
-            <label className="label mt-4">Customer Email</label>
+
+            {/* Divider and Checkbox */}
+            <div className="flex items-center my-4">
+              <div className="flex-1 h-px bg-gray-300" />
+              <span className="mx-4 text-gray-500">Mailing Address</span>
+              <div className="flex-1 h-px bg-gray-300" />
+            </div>
+            <div className="mb-2">
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  className="form-checkbox"
+                  checked={sameAsInstall}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setSameAsInstall(checked);
+                    if (checked) {
+                      setForm(f => ({
+                        ...f,
+                        mailingAddress: f.installAddress,
+                        mailingCity: f.installCity,
+                        mailingState: f.installState,
+                        mailingZip: f.installZip
+                      }));
+                    }
+                  }}
+                />
+                <span className="ml-2 text-sm">Mailing address is the same as install address</span>
+              </label>
+            </div>
+
+            {/* Mailing Address Fields */}
+            <label className="label mt-2">Mailing Address</label>
             <input
-              name="customerEmail"
+              name="mailingAddress"
               className="input mt-1"
-              value={form.customerEmail}
+              value={form.mailingAddress}
               onChange={handleChange}
+              disabled={sameAsInstall}
             />
+            {errors.mailingAddress && <div className="text-red-500 text-xs mt-1">{errors.mailingAddress}</div>}
+            <div className="flex gap-2 mt-2">
+              <div className="flex-1">
+                <label className="label">City</label>
+                <input
+                  name="mailingCity"
+                  className="input mt-1"
+                  value={form.mailingCity}
+                  onChange={handleChange}
+                  disabled={sameAsInstall}
+                />
+                {errors.mailingCity && <div className="text-red-500 text-xs mt-1">{errors.mailingCity}</div>}
+              </div>
+              <div className="flex-1">
+                <label className="label">State</label>
+                <input
+                  name="mailingState"
+                  className="input mt-1"
+                  value={form.mailingState}
+                  onChange={handleChange}
+                  disabled={sameAsInstall}
+                />
+                {errors.mailingState && <div className="text-red-500 text-xs mt-1">{errors.mailingState}</div>}
+              </div>
+              <div className="flex-1">
+                <label className="label">Zip</label>
+                <input
+                  name="mailingZip"
+                  className="input mt-1"
+                  value={form.mailingZip}
+                  onChange={handleChange}
+                  disabled={sameAsInstall}
+                />
+                {errors.mailingZip && <div className="text-red-500 text-xs mt-1">{errors.mailingZip}</div>}
+              </div>
+            </div>
 
+
+            {/* Claim Number (read-only for now) */}
             <label className="label mt-4">Claim Number</label>
             <input
               name="claimNumber"
-              className="input mt-1"
+              className="input mt-1 bg-gray-100 cursor-not-allowed"
               value={form.claimNumber}
-              onChange={handleChange}
+              readOnly
             />
 
             <div className="flex justify-end mt-6">
@@ -117,6 +369,7 @@ const NewApplication = () => {
                 </option>
               ))}
             </select>
+            {errors.equipmentType && <div className="text-red-500 text-xs mt-1">{errors.equipmentType}</div>}
 
             <label className="label mt-4">Model</label>
             <select
@@ -132,6 +385,7 @@ const NewApplication = () => {
                 </option>
               ))}
             </select>
+            {errors.model && <div className="text-red-500 text-xs mt-1">{errors.model}</div>}
 
             <label className="label mt-4">Efficiency Rating</label>
             <select
@@ -173,17 +427,23 @@ const NewApplication = () => {
               type="file"
               multiple
               className="w-full mt-1"
-              onChange={(e) =>
-                setForm({ ...form, files: Array.from(e.target.files) })
-              }
+              onChange={e => {
+                const files = Array.from(e.target.files).map(file => ({
+                  name: file.name,
+                  size: file.size,
+                  file
+                }));
+                setForm({ ...form, files });
+              }}
             />
             {form.files.length > 0 && (
               <ul className="text-sm mt-3 bg-gray-100 p-3 rounded">
-                {form.files.map((file) => (
-                  <li key={file.name}>{file.name}</li>
+                {form.files.map((f) => (
+                  <li key={f.name}>{f.name} <span className="text-gray-500">({(f.size/1024).toFixed(1)} KB)</span></li>
                 ))}
               </ul>
             )}
+            {errors.files && <div className="text-red-500 text-xs mt-1">{errors.files}</div>}
 
             <div className="flex justify-between mt-6">
               <button onClick={prevStep} className="btn-secondary">
@@ -288,7 +548,7 @@ const NewApplication = () => {
               />
             </div>
           </div>
-          <h2 className="text-lg font-semibold text-[#1E2A5A]">
+          <h2 className="text-lg font-semibold text-[#1E2A5A">
             {steps[step - 1]}
           </h2>
           {getSupportingText() && (
