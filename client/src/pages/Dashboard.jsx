@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { useUser } from '../context/useUser';
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
+  const { user, setUser } = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {
