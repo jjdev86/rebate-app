@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useUser } from '../context/useUser';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../api";
 
 const steps = [
@@ -12,6 +12,8 @@ const steps = [
 
 const NewApplication = () => {
   const { user } = useUser();
+  const { id: applicationId } = useParams();
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [sameAsInstall, setSameAsInstall] = useState(false);
   const [form, setForm] = useState({
@@ -27,11 +29,12 @@ const NewApplication = () => {
     mailingCity: "",
     mailingState: "",
     phoneNumber: user?.phoneNumber || "",
-    claimNumber: "",
+    claimNumber: applicationId || "",
     equipmentType: "",
     model: "",
     efficiencyRating: "",
     files: [],
+    isSameAsInstall: false,
   });
   const [options, setOptions] = useState({
     equipmentTypes: [],
@@ -65,6 +68,72 @@ const NewApplication = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (applicationId) {
+      setForm((prev) => ({ ...prev, claimNumber: applicationId }));
+    }
+  }, [applicationId]);
+
+  useEffect(() => {
+    // If application data is passed via navigation, map it into the form
+    if (location.state && location.state.application) {
+      const app = location.state.application;
+      let mappedProductId = app.productId;
+      let mappedModel = app.model;
+      if (options.models && Array.isArray(options.models) && mappedProductId) {
+        const foundModel = options.models.find(m => typeof m === 'object' && m.id === mappedProductId);
+        if (foundModel) mappedModel = foundModel.modelNumber;
+      }
+      setForm(prev => ({
+        ...prev,
+        ...app,
+        productId: mappedProductId,
+        model: mappedModel,
+        email: app.email || user?.email || '',
+        files: app.files || [],
+        claimNumber: app.claimNumber || app.id || "",
+        isSameAsInstall: app.isSameAsInstall || false,
+      }));
+      setSameAsInstall(!!app.isSameAsInstall);
+    } else if (applicationId) {
+      // If no state, fetch from server
+      (async () => {
+        try {
+          const res = await api.get(`/applications/${applicationId}`);
+          const app = res.data;
+          let mappedProductId = app.productId;
+          let mappedModel = app.model;
+          if (options.models && Array.isArray(options.models) && mappedProductId) {
+            const foundModel = options.models.find(m => typeof m === 'object' && m.id === mappedProductId);
+            if (foundModel) mappedModel = foundModel.modelNumber;
+          }
+          setForm(prev => ({
+            ...prev,
+            ...app,
+            productId: mappedProductId,
+            model: mappedModel,
+            email: app.email || user?.email || '',
+            files: app.files || [],
+            claimNumber: app.claimNumber || app.id || "",
+            isSameAsInstall: app.isSameAsInstall || false,
+          }));
+          setSameAsInstall(!!app.isSameAsInstall);
+        } catch (err) {
+          console.error('Failed to fetch application:', err);
+        }
+      })();
+    } else if (user) {
+      // If no application data, set from user
+      setForm(prev => ({
+        ...prev,
+        customerFirstName: user.firstName || "",
+        customerLastName: user.lastName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+      }));
+    }
+  }, [location.state, applicationId, options.models, user]);
+
   const handleChange = (e) => {
     let { name, value } = e.target;
 
@@ -91,23 +160,48 @@ const NewApplication = () => {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
+  // Handler for equipment type change
+  const handleEquipmentTypeChange = (e) => {
+    const value = e.target.value;
+    setForm((prev) => ({
+      ...prev,
+      equipmentType: value,
+      model: '',
+      productId: '',
+      efficiencyRating: ''
+    }));
+  };
+
+  // Handler for model change
+  const handleModelChange = (e) => {
+    const value = e.target.value;
+    let selected = null;
+    if (options.models && Array.isArray(options.models)) {
+      selected = options.models.find(m => (typeof m === 'object' && m.id === value) || m === value);
+    }
+    setForm((prev) => ({
+      ...prev,
+      model: selected && typeof selected === 'object' ? selected.modelNumber : (selected || ''),
+      productId: selected && typeof selected === 'object' ? selected.id : value,
+    }));
+  };
+
   // Validation for step 1 fields (except claimNumber)
   const validateStep1 = () => {
     const newErrors = {};
-    if (!form.customerFirstName.trim()) newErrors.customerFirstName = 'First name is required';
-    if (!form.customerLastName.trim()) newErrors.customerLastName = 'Last name is required';
-    if (!form.email.trim()) newErrors.email = 'Customer email is required';
-    // Stricter email regex
-    else if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(form.email)) newErrors.email = 'Invalid email format';
-    if (!form.installAddress.trim()) newErrors.installAddress = 'Install address is required';
-    if (!form.installCity.trim()) newErrors.installCity = 'Install city is required';
-    if (!form.installState.trim()) newErrors.installState = 'Install state is required';
-    if (!form.installZip.trim()) newErrors.installZip = 'Install zip is required';
-    if (!form.mailingAddress.trim()) newErrors.mailingAddress = 'Mailing address is required';
-    if (!form.mailingCity.trim()) newErrors.mailingCity = 'Mailing city is required';
-    if (!form.mailingState.trim()) newErrors.mailingState = 'Mailing state is required';
-    if (!form.mailingZip.trim()) newErrors.mailingZip = 'Mailing zip is required';
-    if (!form.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
+    if (!form.customerFirstName || !form.customerFirstName.trim()) newErrors.customerFirstName = 'First name is required';
+    if (!form.customerLastName || !form.customerLastName.trim()) newErrors.customerLastName = 'Last name is required';
+    // Only check for null/undefined email, not empty string
+    if (form.email == null) newErrors.email = 'Customer email is required';
+    if (!form.installAddress || !form.installAddress.trim()) newErrors.installAddress = 'Install address is required';
+    if (!form.installCity || !form.installCity.trim()) newErrors.installCity = 'Install city is required';
+    if (!form.installState || !form.installState.trim()) newErrors.installState = 'Install state is required';
+    if (!form.installZip || !form.installZip.trim()) newErrors.installZip = 'Install zip is required';
+    if (!form.mailingAddress || !form.mailingAddress.trim()) newErrors.mailingAddress = 'Mailing address is required';
+    if (!form.mailingCity || !form.mailingCity.trim()) newErrors.mailingCity = 'Mailing city is required';
+    if (!form.mailingState || !form.mailingState.trim()) newErrors.mailingState = 'Mailing state is required';
+    if (!form.mailingZip || !form.mailingZip.trim()) newErrors.mailingZip = 'Mailing zip is required';
+    if (!form.phoneNumber || !form.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
     // Phone number: (123) 456-7890
     else if (!/^\(\d{3}\) \d{3}-\d{4}$/.test(form.phoneNumber)) newErrors.phoneNumber = 'Format: (123) 456-7890';
     return newErrors;
@@ -116,7 +210,7 @@ const NewApplication = () => {
   const validateStep2 = () => {
     const newErrors = {};
     if (!form.equipmentType) newErrors.equipmentType = 'Equipment type is required';
-    if (!form.model) newErrors.model = 'Model is required';
+    if (!form.productId) newErrors.model = 'Model is required';
     return newErrors;
   };
 
@@ -126,7 +220,17 @@ const NewApplication = () => {
     return newErrors;
   };
 
-  const nextStep = () => {
+  const saveProgress = async () => {
+    if (applicationId) {
+      try {
+        await api.put(`/applications/${applicationId}`, form);
+      } catch (err) {
+        console.error('Failed to save application progress:', err);
+      }
+    }
+  };
+
+  const nextStep = async () => {
     let validationErrors = {};
     if (step === 1) {
       validationErrors = validateStep1();
@@ -137,12 +241,26 @@ const NewApplication = () => {
     }
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
+
+    // Equipment Details step: send productId to application
+    if (step === 2 && applicationId) {
+      // Only send productId if it is a valid UUID (from model object)
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      if (!form.productId || !uuidRegex.test(form.productId)) {
+        setErrors({ ...errors, model: 'Please select a valid model number.' });
+        console.warn('Invalid productId:', form.productId, 'Form:', form, 'Options:', options.models);
+        return;
+      }
+      await api.put(`/applications/${applicationId}`, { ...form, productId: form.productId });
+    } else {
+      await saveProgress();
+    }
     setStep((prev) => prev + 1);
   };
   const prevStep = () => setStep((prev) => prev - 1);
 
   const handleSubmit = async () => {
-    await api.post("/applications", form);
+    await api.put(`/applications/${applicationId}`, form);
     navigate("/dashboard");
   };
 
@@ -163,7 +281,7 @@ const NewApplication = () => {
     }
   };
 
-  console.log("User", user);
+ 
   const renderStepContent = () => {
     switch (step) {
       case 1:
@@ -197,7 +315,7 @@ const NewApplication = () => {
                 <label className="label">Email</label>
                 <input
                   name="email"
-                  className="input mt-1"
+                  className="input mt-1 bg-gray-100 cursor-not-allowed"
                   value={form.email}
                   onChange={handleChange}
                   readOnly
@@ -273,15 +391,16 @@ const NewApplication = () => {
                   onChange={e => {
                     const checked = e.target.checked;
                     setSameAsInstall(checked);
-                    if (checked) {
-                      setForm(f => ({
-                        ...f,
+                    setForm(f => ({
+                      ...f,
+                      isSameAsInstall: checked,
+                      ...(checked ? {
                         mailingAddress: f.installAddress,
                         mailingCity: f.installCity,
                         mailingState: f.installState,
                         mailingZip: f.installZip
-                      }));
-                    }
+                      } : {})
+                    }));
                   }}
                 />
                 <span className="ml-2 text-sm">Mailing address is the same as install address</span>
@@ -359,7 +478,7 @@ const NewApplication = () => {
             <select
               name="equipmentType"
               value={form.equipmentType}
-              onChange={handleChange}
+              onChange={handleEquipmentTypeChange}
               className="input mt-1"
             >
               <option value="">Select</option>
@@ -373,16 +492,20 @@ const NewApplication = () => {
 
             <label className="label mt-4">Model</label>
             <select
-              name="model"
-              value={form.model}
-              onChange={handleChange}
+              name="productId"
+              value={form.productId || ''}
+              onChange={handleModelChange}
               className="input mt-1"
             >
               <option value="">Select</option>
               {options.models.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
+                typeof opt === 'object' ? (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.modelNumber}
+                  </option>
+                ) : (
+                  <option key={opt} value={opt}>{opt}</option>
+                )
               ))}
             </select>
             {errors.model && <div className="text-red-500 text-xs mt-1">{errors.model}</div>}
