@@ -80,15 +80,23 @@ const NewApplication = () => {
       const app = location.state.application;
       let mappedProductId = app.productId;
       let mappedModel = app.model;
+      let mappedEquipmentType = app.equipmentType;
+      let mappedEfficiencyRating = app.efficiencyRating;
       if (options.models && Array.isArray(options.models) && mappedProductId) {
         const foundModel = options.models.find(m => typeof m === 'object' && m.id === mappedProductId);
-        if (foundModel) mappedModel = foundModel.modelNumber;
+        if (foundModel) {
+          mappedModel = foundModel.modelNumber;
+          if (foundModel.type) mappedEquipmentType = foundModel.type;
+          // If you add efficiencyRating to Product in the future, map it here
+        }
       }
       setForm(prev => ({
         ...prev,
         ...app,
         productId: mappedProductId,
         model: mappedModel,
+        equipmentType: mappedEquipmentType,
+        efficiencyRating: mappedEfficiencyRating,
         email: app.email || user?.email || '',
         files: app.files || [],
         claimNumber: app.claimNumber || app.id || "",
@@ -103,15 +111,23 @@ const NewApplication = () => {
           const app = res.data;
           let mappedProductId = app.productId;
           let mappedModel = app.model;
+          let mappedEquipmentType = app.equipmentType;
+          let mappedEfficiencyRating = app.efficiencyRating;
           if (options.models && Array.isArray(options.models) && mappedProductId) {
             const foundModel = options.models.find(m => typeof m === 'object' && m.id === mappedProductId);
-            if (foundModel) mappedModel = foundModel.modelNumber;
+            if (foundModel) {
+              mappedModel = foundModel.modelNumber;
+              if (foundModel.type) mappedEquipmentType = foundModel.type;
+              // If you add efficiencyRating to Product in the future, map it here
+            }
           }
           setForm(prev => ({
             ...prev,
             ...app,
             productId: mappedProductId,
             model: mappedModel,
+            equipmentType: mappedEquipmentType,
+            efficiencyRating: mappedEfficiencyRating,
             email: app.email || user?.email || '',
             files: app.files || [],
             claimNumber: app.claimNumber || app.id || "",
@@ -260,7 +276,7 @@ const NewApplication = () => {
   const prevStep = () => setStep((prev) => prev - 1);
 
   const handleSubmit = async () => {
-    await api.put(`/applications/${applicationId}`, form);
+    await api.put(`/applications/${applicationId}`, { ...form, status: 'submitted' });
     navigate("/dashboard");
   };
 
@@ -509,21 +525,6 @@ const NewApplication = () => {
               ))}
             </select>
             {errors.model && <div className="text-red-500 text-xs mt-1">{errors.model}</div>}
-
-            <label className="label mt-4">Efficiency Rating</label>
-            <select
-              name="efficiencyRating"
-              value={form.efficiencyRating}
-              onChange={handleChange}
-              className="input mt-1"
-            >
-              <option value="">Select</option>
-              {options.efficiencyRatings.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
 
             <div className="bg-[#EAF3FF] text-[#1E2A5A] p-4 rounded mt-4 text-sm">
               Eligible for a <strong>$500 rebate</strong>
