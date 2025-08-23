@@ -89,12 +89,14 @@ const Dashboard = () => {
                   <td className="p-2">{app.status}</td>
                   <td className="p-2">{new Date(app.createdAt).toLocaleDateString()}</td>
                   <td className="p-2">
-                    <button
-                      className="text-blue-600 hover:underline"
-                      onClick={() => handleViewEditApplication(app.id)}
-                    >
-                      View/Edit
-                    </button>
+                    {app.status !== 'submitted' && (
+                      <button
+                        className="text-blue-600 hover:underline"
+                        onClick={() => handleViewEditApplication(app.id)}
+                      >
+                        View/Edit
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
