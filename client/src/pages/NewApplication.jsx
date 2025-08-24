@@ -610,17 +610,23 @@ const NewApplication = () => {
               <ul className="text-sm mt-3 bg-gray-100 p-3 rounded">
                 {form.files.map((f) => {
                   const url = f.url || f.publicUrl;
-                  const isImage = url && /\.(png|jpe?g|webp)$/i.test(url);
                   return (
                     <li key={f.id || f.name} className="flex items-center gap-3 mb-2 last:mb-0">
-                      {isImage && (
-                        <img src={url} alt={f.filename || f.name} className="w-10 h-10 object-cover rounded border" />
-                      )}
                       <span>{f.filename || f.name}</span>
                       <span className="text-gray-500 ml-1">({((f.size || f.sizeBytes || 0)/1024).toFixed(1)} KB)</span>
                       {url && (
                         <>
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 underline">View</a>
+                          <button
+                            className="ml-2 text-blue-600 underline"
+                            onClick={async () => {
+                              try {
+                                const res = await api.get(`/applications/${applicationId}/files/${f.id}/presign-view`);
+                                window.open(res.data.url, '_blank', 'noopener');
+                              } catch {
+                                alert('Failed to get view URL');
+                              }
+                            }}
+                          >View</button>
                           <button
                             className="ml-2 text-red-600 underline"
                             onClick={async () => {
