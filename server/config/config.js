@@ -1,3 +1,4 @@
+// server/config/config.js
 require('dotenv').config();
 
 module.exports = {
@@ -26,3 +27,4 @@ module.exports = {
     logging: false,
   },
 };
+// This file exports the database configuration for the development environment.

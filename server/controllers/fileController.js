@@ -127,6 +127,16 @@ exports.createApplicationFile = async (req, res, next) => {
       where: { id: applicationId, userId },
     });
     if (!app) return res.status(404).json({ error: "Application not found" });
+    // bug fix
+    console.log("Creating ApplicationFile with payload:", {
+      applicationId,
+      s3Key,
+      url,
+      filename,
+      contentType,
+      size: req.body.size,
+      sizeBytes: req.body.sizeBytes,
+    });
 
     const record = await ApplicationFile.create({
       applicationId,
@@ -139,6 +149,7 @@ exports.createApplicationFile = async (req, res, next) => {
 
     return res.status(201).json(record);
   } catch (err) {
+    console.error('ApplicationFile.create failed:', err);
     next(err);
   }
 };
@@ -168,12 +179,7 @@ exports.deleteApplicationFile = async (req, res, next) => {
   try {
     const { applicationId, fileId } = req.params;
     const userId = req.user?.id;
-    console.log("deleteApplicationFile params", {
-      applicationId,
-      fileId,
-      userId,
-      types: { appId: typeof applicationId, fileId: typeof fileId },
-    });
+   
     const app = await Application.findOne({
       where: { id: applicationId, userId },
     });
