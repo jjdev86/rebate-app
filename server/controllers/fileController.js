@@ -1,3 +1,4 @@
+
 // controllers/fileController.js
 const { getPresignedPutUrl, randomKey } = require("../config/s3");
 const { Application, ApplicationFile } = require("../models");
@@ -23,6 +24,27 @@ function withTimeout(promise, ms, label) {
     ),
   ]);
 }
+
+
+// Returns a presigned GET URL for a file (for secure viewing)
+exports.presignGetUrl = async (req, res, next) => {
+  try {
+    const { applicationId, fileId } = req.params;
+    const userId = req.user?.id;
+    // Find the file and check ownership
+    const file = await ApplicationFile.findOne({
+      where: { id: fileId, applicationId },
+      include: [{ model: Application, where: { userId } }]
+    });
+    if (!file) return res.status(404).json({ error: 'File not found' });
+    const { getPresignedGetUrl } = require('../config/s3');
+    const url = await getPresignedGetUrl({ key: file.s3Key, expiresIn: 60 });
+    return res.json({ url });
+  } catch (err) {
+    console.error('presignGetUrl error', { err });
+    next(err);
+  }
+};
 
 exports.presignUpload = async (req, res, next) => {
   try {

@@ -4,8 +4,10 @@ const {
   presignUpload,
   createApplicationFile,
   listApplicationFiles,
-  deleteApplicationFile
+  deleteApplicationFile,
+  presignGetUrl
 } = require('../controllers/fileController');
+
 const validate = require('../middleware/fileValidate');
 const requireAuth = require('../middleware/authMiddleware');
 
@@ -22,6 +24,9 @@ router.use(requireAuth);
 
 // GET /api/applications/:applicationId/files
 router.get('/', listFilesRules, validate, listApplicationFiles);
+
+// GET /api/applications/:applicationId/files/:fileId/presign-view
+router.get('/:fileId/presign-view', presignGetUrl);
 
 // POST /api/applications/:applicationId/files/presign
 router.post('/presign', presignUploadRules, validate, presignUpload);

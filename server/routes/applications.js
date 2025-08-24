@@ -9,7 +9,9 @@ router.use(auth);
 router.post('/', createApplicationValidation, appController.createApplication);
 router.get('/', appController.getApplications);
 router.get('/:id', appController.getApplication);
-// router.put('/:id', appController.updateApplication);   // add later
+// Update an application by ID
+router.put('/:id', appController.updateApplication);
 // router.delete('/:id', appController.deleteApplication); // optional
+router.post('/draft', appController.createDraftApplication);
 
 module.exports = router;

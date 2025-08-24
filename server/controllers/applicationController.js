@@ -39,6 +39,19 @@ exports.createApplication = async (req, res) => {
   }
 };
 
+exports.createDraftApplication = async (req, res) => {
+  try {
+    const app = await Application.create({
+      userId: req.user.id,
+      status: 'draft',
+    });
+    res.status(201).json({ id: app.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+};
+
 exports.getApplications = async (req, res) => {
   const apps = await Application.findAll({
     where: { userId: req.user.id },
@@ -58,4 +71,18 @@ exports.getApplication = async (req, res) => {
   });
   if (!app) return res.status(404).json({ message: 'Not found' });
   res.json(app);
+};
+
+exports.updateApplication = async (req, res) => {
+  try {
+    const app = await Application.findOne({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!app) return res.status(404).json({ message: 'Not found' });
+    await app.update(req.body);
+    res.json(app);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
 };
