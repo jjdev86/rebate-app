@@ -1,5 +1,5 @@
 // config/s3.js (CommonJS)
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
 
@@ -18,6 +18,7 @@ function randomKey(prefix = '') {
   return `${prefix}${crypto.randomUUID()}`;
 }
 
+
 async function getPresignedPutUrl({ bucket, key, contentType, expiresIn = 60 }) {
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET,
@@ -28,5 +29,14 @@ async function getPresignedPutUrl({ bucket, key, contentType, expiresIn = 60 }) 
   return url;
 }
 
-module.exports = { s3, getPresignedPutUrl, randomKey };
+async function getPresignedGetUrl({ bucket, key, expiresIn = 60 }) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.AWS_BUCKET,
+    Key: key
+  });
+  const url = await getSignedUrl(s3, command, { expiresIn });
+  return url;
+}
+
+module.exports = { s3, getPresignedPutUrl, getPresignedGetUrl, randomKey };
 // This file configures the AWS S3 client and provides a function to generate presigned URLs for uploading files.
