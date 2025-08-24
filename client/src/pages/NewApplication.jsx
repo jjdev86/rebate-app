@@ -551,20 +551,95 @@ const NewApplication = () => {
               type="file"
               multiple
               className="w-full mt-1"
-              onChange={e => {
-                const files = Array.from(e.target.files).map(file => ({
-                  name: file.name,
-                  size: file.size,
-                  file
-                }));
-                setForm({ ...form, files });
+              onChange={async e => {
+                const files = Array.from(e.target.files);
+                for (const file of files) {
+                  // 1. Request presigned URL
+                  let presignRes;
+                  try {
+                    presignRes = await api.post(`/applications/${applicationId}/files/presign`, {
+                      filename: file.name,
+                      contentType: file.type,
+                      size: file.size
+                    });
+                  } catch {
+                    alert('Failed to get upload URL for ' + file.name);
+                    continue;
+                  }
+                  const { uploadUrl, s3Key, publicUrl } = presignRes.data;
+                  console.log('Presign response:', presignRes.data);
+                  // 2. Upload to S3
+                  try {
+                    await fetch(uploadUrl, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': file.type
+                      },
+                      body: file
+                    });
+                  } catch {
+                    alert('Failed to upload to S3 for ' + file.name);
+                    continue;
+                  }
+                  // 3. Save metadata
+                  try {
+                    await api.post(`/applications/${applicationId}/files`, {
+                      s3Key,
+                      publicUrl,
+                      filename: file.name,
+                      contentType: file.type,
+                      size: file.size
+                    });
+                  } catch (err) {
+                    console.error('Failed to save file metadata:', err);
+                    alert('Failed to save file metadata for ' + file.name);
+                    continue;
+                  }
+                }
+                // 4. Refresh file list
+                try {
+                  const res = await api.get(`/applications/${applicationId}/files`);
+                  console.log('Updated file list:', res.data);
+                  setForm(f => ({ ...f, files: res.data }));
+                } catch {
+                  alert('Failed to refresh file list');
+                }
               }}
             />
             {form.files.length > 0 && (
               <ul className="text-sm mt-3 bg-gray-100 p-3 rounded">
-                {form.files.map((f) => (
-                  <li key={f.name}>{f.name} <span className="text-gray-500">({(f.size/1024).toFixed(1)} KB)</span></li>
-                ))}
+                {form.files.map((f) => {
+                  const url = f.url || f.publicUrl;
+                  const isImage = url && /\.(png|jpe?g|webp)$/i.test(url);
+                  return (
+                    <li key={f.id || f.name} className="flex items-center gap-3 mb-2 last:mb-0">
+                      {isImage && (
+                        <img src={url} alt={f.filename || f.name} className="w-10 h-10 object-cover rounded border" />
+                      )}
+                      <span>{f.filename || f.name}</span>
+                      <span className="text-gray-500 ml-1">({((f.size || f.sizeBytes || 0)/1024).toFixed(1)} KB)</span>
+                      {url && (
+                        <>
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 underline">View</a>
+                          <button
+                            className="ml-2 text-red-600 underline"
+                            onClick={async () => {
+                              if (!window.confirm('Delete this file?')) return;
+                              try {
+                                await api.delete(`/applications/${applicationId}/files/${f.id}`);
+                                // Refresh file list
+                                const res = await api.get(`/applications/${applicationId}/files`);
+                                setForm(prev => ({ ...prev, files: res.data }));
+                              } catch (err) {
+                                alert('Failed to delete file');
+                              }
+                            }}
+                          >Delete</button>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
             {errors.files && <div className="text-red-500 text-xs mt-1">{errors.files}</div>}
