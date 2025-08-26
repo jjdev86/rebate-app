@@ -418,23 +418,40 @@ const NewApplication = () => {
     }
   };
 
-  const handleDeleteFile = async (file) => {
-    if (!window.confirm("Delete this file?")) return;
+  // Delete popup state
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
+
+  const handleDeleteFile = (file) => {
+    setFileToDelete(file);
+    setShowDeletePopup(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!fileToDelete) return;
     try {
-      await api.delete(
-        `/applications/${applicationId}/files/${file.id}`
+      const res = await api.delete(
+        `/applications/${applicationId}/files/${fileToDelete.id}`,
+        { validateStatus: () => true }
       );
-      // Refresh file list
-      const res = await api.get(
-        `/applications/${applicationId}/files`
-      );
-      setForm((prev) => ({
-        ...prev,
-        files: res.data,
-      }));
-    } catch (err) {
+      if (res.status === 204) {
+        setForm((prev) => ({
+          ...prev,
+          files: prev.files.filter((f) => f.id !== fileToDelete.id),
+        }));
+      } else {
+        alert("Failed to delete file");
+      }
+    } catch {
       alert("Failed to delete file");
     }
+    setShowDeletePopup(false);
+    setFileToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeletePopup(false);
+    setFileToDelete(null);
   };
 
   const renderStepContent = () => {
@@ -488,6 +505,10 @@ const NewApplication = () => {
             onNext={nextStep}
             onView={handleViewFile}
             onDelete={handleDeleteFile}
+            showDeletePopup={showDeletePopup}
+            fileToDelete={fileToDelete}
+            onConfirmDelete={handleConfirmDelete}
+            onCancelDelete={handleCancelDelete}
           />
         );
       default:
