@@ -11,6 +11,58 @@ import { useUser } from '../context/useUser';
  * - Card list on mobile, table on desktop
  * - Prominent "Start new application" CTA; Logout moves to profile menu (top‑right)
  */
+// --- Footer config (edit these placeholders) ---
+const CREATOR_NAME = 'Jose Valadez';
+const CONTACT_EMAIL = 'vinmajj@gmail.com';
+const SOCIAL_LINKS = {
+  x: 'https://x.com/yourhandle',
+  linkedin: 'https://www.linkedin.com/in/yourhandle',
+  github: 'https://github.com/yourhandle',
+};
+
+// Minimal, responsive footer that matches the app theme
+const Footer = ({ creatorName, contactEmail, socialLinks }) => (
+  <footer className="mt-10 border-t bg-white">
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div>
+          <h3 className="text-sm font-semibold text-[#1E2A5A]">About this portal</h3>
+          <p className="mt-2 text-sm text-gray-600">Smart Benefit helps you start, track, and manage rebate applications from your phone—fast, secure, and paper‑free.</p>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-[#1E2A5A]">Contact</h3>
+          <p className="mt-2 text-sm text-gray-600">Questions or feedback? I’d love to hear from you.</p>
+          <a href={`mailto:${contactEmail}`} className="mt-2 inline-flex items-center text-sm text-[#0052CC] underline underline-offset-2">{contactEmail}</a>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-[#1E2A5A]">Social</h3>
+          <nav aria-label="Social media" className="mt-2 flex items-center gap-4">
+            {socialLinks?.x && (
+              <a href={socialLinks.x} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0052CC]" aria-label="X (formerly Twitter)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4l16 16M20 4 4 20"/></svg>
+              </a>
+            )}
+            {socialLinks?.linkedin && (
+              <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0052CC]" aria-label="LinkedIn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v6h-4v-6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v6h-4v-12h4v2"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+            )}
+            {socialLinks?.github && (
+              <a href={socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#0052CC]" aria-label="GitHub">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 18 3.77 5.07 5.07 0 0 0 17.91 1S16.73.65 14 2.48a13.38 13.38 0 0 0-8 0C3.27.65 2.09 1 2.09 1A5.07 5.07 0 0 0 2 3.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 6 18.13V22"/></svg>
+              </a>
+            )}
+          </nav>
+        </div>
+      </div>
+      <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t pt-4">
+        <p className="text-xs text-gray-500">© {new Date().getFullYear()} Smart Benefit. All rights reserved.</p>
+        <p className="text-xs text-gray-500">Created by <span className="font-medium text-[#1E2A5A]">{creatorName}</span></p>
+      </div>
+    </div>
+  </footer>
+);
+
 const Dashboard = () => {
   const { user, setUser } = useUser();
   const [applications, setApplications] = useState([]);
@@ -375,6 +427,8 @@ const Dashboard = () => {
           )}
         </section>
       </main>
+
+      <Footer creatorName={CREATOR_NAME} contactEmail={CONTACT_EMAIL} socialLinks={SOCIAL_LINKS} />
 
       {/* Sticky mobile CTA bar */}
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-10 bg-white border-t p-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
