@@ -65,7 +65,7 @@ export const SiteHeader = ({
             to={variant === "app" ? "/dashboard" : "/"}
             className="font-semibold text-[#1E2A5A]"
           >
-            Smart Benefit
+            Smart Benefit Portal
           </Link>
         </div>
 
