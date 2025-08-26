@@ -1,15 +1,25 @@
-import React from "react";
+import React, { useRef } from "react";
 import PropTypes from "prop-types";
 
-const AttachmentsStep = ({ values, errors, onFileChange, onPrev, onNext, onView, onDelete, showDeletePopup, fileToDelete, onConfirmDelete, onCancelDelete }) => (
-  <>
-    <label className="label">Attachments</label>
-    <input
-      type="file"
-      multiple
-      className="w-full mt-1"
-      onChange={onFileChange}
-    />
+const AttachmentsStep = ({ values, errors, onFileChange, onPrev, onNext, onView, onDelete, showDeletePopup, fileToDelete, onConfirmDelete, onCancelDelete }) => {
+  const fileInputRef = useRef();
+
+  // Wrap the onFileChange to clear the input after upload
+  const handleFileChange = async (e) => {
+    await onFileChange(e);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  return (
+    <>
+      <label className="label">Attachments</label>
+      <input
+        type="file"
+        multiple
+        className="w-full mt-1"
+        onChange={handleFileChange}
+        ref={fileInputRef}
+      />
     {values.files && values.files.length > 0 && (
       <ul className="text-sm mt-3 bg-gray-100 p-3 rounded">
         {values.files.map((f) => {
@@ -71,8 +81,9 @@ const AttachmentsStep = ({ values, errors, onFileChange, onPrev, onNext, onView,
         </div>
       </div>
     )}
-  </>
-);
+    </>
+  );
+};
 
 AttachmentsStep.propTypes = {
   values: PropTypes.object.isRequired,
