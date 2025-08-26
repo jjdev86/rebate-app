@@ -527,9 +527,11 @@ const NewApplication = () => {
   <SiteHeader variant="app" />
       <div className="min-h-screen bg-gray-50 p-6 md:p-10 flex flex-col items-center">
         {/* Title */}
-        <h1 className="text-2xl font-semibold text-[#1E2A5A] mb-6">
-          Smart Benefit Claim Portal
-        </h1>
+        <div className="w-full max-w-5xl mx-auto">
+          <h1 className="text-2xl font-semibold text-[#1E2A5A] mb-6 text-left">
+            Smart Benift Application
+          </h1>
+        </div>
         {/* Main Container */}
         <div className="bg-white w-full max-w-5xl rounded shadow flex flex-col md:flex-row overflow-hidden">
           <StepSidebar steps={steps} step={step} />
