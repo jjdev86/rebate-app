@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-const AttachmentsStep = ({ values, errors, onFileChange, onPrev, onNext, onView, onDelete }) => (
+const AttachmentsStep = ({ values, errors, onFileChange, onPrev, onNext, onView, onDelete, showDeletePopup, fileToDelete, onConfirmDelete, onCancelDelete }) => (
   <>
     <label className="label">Attachments</label>
     <input
@@ -57,6 +57,20 @@ const AttachmentsStep = ({ values, errors, onFileChange, onPrev, onNext, onView,
         Next
       </button>
     </div>
+
+    {/* Delete Confirmation Popup */}
+    {showDeletePopup && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+        <div className="bg-white rounded shadow-lg p-6 w-full max-w-sm">
+          <h3 className="text-lg font-semibold mb-4">Delete Attachment</h3>
+          <p className="mb-6">Are you sure you want to delete <span className="font-semibold">{fileToDelete?.filename || fileToDelete?.name}</span>?</p>
+          <div className="flex justify-end gap-3">
+            <button className="btn-secondary" onClick={onCancelDelete} type="button">No</button>
+            <button className="btn-primary" onClick={onConfirmDelete} type="button">Yes, Delete</button>
+          </div>
+        </div>
+      </div>
+    )}
   </>
 );
 
@@ -68,6 +82,10 @@ AttachmentsStep.propTypes = {
   onNext: PropTypes.func.isRequired,
   onView: PropTypes.func,
   onDelete: PropTypes.func,
+  showDeletePopup: PropTypes.bool,
+  fileToDelete: PropTypes.object,
+  onConfirmDelete: PropTypes.func,
+  onCancelDelete: PropTypes.func,
 };
 
 export default AttachmentsStep;
