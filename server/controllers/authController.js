@@ -19,10 +19,17 @@ exports.register = async (req, res) => {
     user = await User.create({ email, password: hashedPassword });
 
     const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      res.json({ token });
-    });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Send token in HTTP-only cookie
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // only over HTTPS in production
+        sameSite: 'strict',
+        maxAge: 3600000, // 1 hour
+      })
+      .status(201)
+      .json({ message: 'User registered successfully' });
   } catch (error) {
     console.error(error.message);
     res.status(500).send('Server error');
@@ -42,10 +49,16 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: 'Invalid Credentials' });
 
     const payload = { user: { id: user.id } };
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-      if (err) throw err;
-      res.json({ token });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.cookie('token', token, {
+      httpOnly: true, // JS cannot access
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
+      sameSite: 'lax', // mitigate CSRF
+      maxAge: 60 * 60 * 1000, // 1 hour
     });
+    res.json({ message: 'Logged in successfully' });
+
   } catch (error) {
     console.error(error.message);
     res.status(500).send('Server error');
@@ -53,14 +66,21 @@ exports.login = async (req, res) => {
 };
 
 exports.getMe = async (req, res) => {
+  const token = req.cookies.token;
+  // Check if token exists
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
   try {
-    const user = await User.findByPk(req.user.id, { attributes: ['id', 'email', 'createdAt'] });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findByPk(decoded.user.id, { attributes: ['id', 'email', 'createdAt'] });
     res.json(user);
+
   } catch (error) {
     console.error(error.message);
-    res.status(500).send('Server error');
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
+
 exports.updatePassword = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
@@ -95,18 +115,18 @@ exports.deleteAccount = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
-// This file contains the authentication controller for user registration, login, fetching user details, updating password, and deleting account.
-// It uses bcrypt for password hashing and JWT for token generation, along with express-validator for input validation.
-// The controller handles errors and sends appropriate responses based on the success or failure of each operation.
-// It also includes methods for updating the user's password and deleting the user's account, ensuring proper validation and error handling throughout the process.
-// The `getMe` method retrieves the authenticated user's details, while `updatePassword` and `deleteAccount` methods allow users to manage their account settings securely.
-// The controller is designed to be modular and reusable, making it easy to integrate into the overall application architecture.
-// The methods are structured to handle asynchronous operations using async/await syntax, providing a clean and readable flow for handling requests and responses.
-// Each method includes error handling to catch and log any issues that may arise during execution, ensuring that the application can gracefully handle unexpected situations.
-// The use of environment variables for sensitive information like JWT secret and database connection details enhances security and flexibility, allowing for easy configuration across different environments (development, production, etc.).
-// Overall, this controller serves as a foundational component for managing user authentication and account management in the application, providing essential functionality for user interactions and security.
-// It is designed to be easily extendable, allowing for future enhancements such as additional user features or integrations with other services.
-// The controller can be further improved by adding features like email verification, password reset functionality, and multi-factor authentication to enhance security and user experience.
-// Additionally, implementing rate limiting and logging for authentication requests can help protect against brute force attacks and monitor user activity.
-// The controller can also be integrated with a frontend application to provide a seamless user experience, allowing users to register, log in, and manage their accounts through a user-friendly interface.
-// Overall, this authentication controller provides a solid foundation for user management in the application, ensuring secure and efficient handling of user
+
+exports.logout = async (req, res) => {
+  try {
+    res.cookie('token', '', {
+      httpOnly: true,
+      expires: new Date(0), // immediately expire
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
