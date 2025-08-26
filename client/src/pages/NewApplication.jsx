@@ -398,9 +398,7 @@ const NewApplication = () => {
     }
     // 4. Refresh file list
     try {
-      const res = await api.get(
-        `/applications/${applicationId}/files`
-      );
+      const res = await api.get(`/applications/${applicationId}/files`);
       setForm((f) => ({ ...f, files: res.data }));
     } catch {
       alert("Failed to refresh file list");
@@ -513,18 +511,72 @@ const NewApplication = () => {
         );
       default:
         return (
-          <ReviewStep
-            values={form}
-            onPrev={prevStep}
-            onSubmit={handleSubmit}
-          />
+          <>
+            <div className="mb-6">
+              <p className="text-gray-700 text-sm">
+                Please review your application details before submitting. Once
+                submitted, our team will begin processing your rebate.
+              </p>
+            </div>
+
+            {/* Customer Info */}
+            <div className="bg-gray-50 rounded p-4 mb-4 shadow-sm">
+              <h3 className="text-[#1E2A5A] font-semibold mb-2">
+                Customer Info
+              </h3>
+              <p className="text-sm text-gray-700">
+                {form.customerFirstName} {form.customerLastName}
+              </p>
+              <p className="text-sm text-gray-700">{form.email}</p>
+              <p className="text-sm text-gray-700">{form.phoneNumber}</p>
+            </div>
+
+            {/* Project Location */}
+            <div className="bg-gray-50 rounded p-4 mb-4 shadow-sm">
+              <h3 className="text-[#1E2A5A] font-semibold mb-2">
+                Project Location
+              </h3>
+              <p className="text-sm text-gray-700">{form.installAddress}</p>
+              <p className="text-sm text-gray-700">
+                {form.installCity}, {form.installState} {form.installZip}
+              </p>
+              <p className="text-sm text-gray-700">
+                Claim #: {form.claimNumber}
+              </p>
+            </div>
+
+            {/* Equipment Info */}
+            <div className="bg-gray-50 rounded p-4 mb-6 shadow-sm">
+              <h3 className="text-[#1E2A5A] font-semibold mb-2">
+                Equipment Info
+              </h3>
+              <p className="text-sm text-gray-700">
+                Type: {form.equipmentType}
+              </p>
+              <p className="text-sm text-gray-700">Model: {form.model}</p>
+              {form.efficiencyRating && (
+                <p className="text-sm text-gray-700">
+                  Efficiency Rating: {form.efficiencyRating}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-between">
+              <button onClick={prevStep} className="btn-secondary">
+                Back
+              </button>
+              <button onClick={handleSubmit} className="btn-primary">
+                Submit
+              </button>
+            </div>
+          </>
         );
     }
   };
 
   return (
     <>
-  <SiteHeader variant="app" />
+      <SiteHeader variant="app" />
       <div className="min-h-screen bg-gray-50 p-6 md:p-10 flex flex-col items-center">
         {/* Title */}
         <div className="w-full max-w-5xl mx-auto">
