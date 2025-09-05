@@ -1,3 +1,4 @@
+// Debug: log equipmentType and options
 import React, { useEffect, useState } from "react";
 import { useUser } from "../context/useUser";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -23,6 +24,7 @@ const steps = [
 ];
 
 const NewApplication = () => {
+
   const { user } = useUser();
   const { id: applicationId } = useParams();
   const location = useLocation();
@@ -43,6 +45,7 @@ const NewApplication = () => {
     phoneNumber: user?.phoneNumber || "",
     claimNumber: applicationId || "",
     equipmentType: "",
+    brand: "",
     model: "",
     efficiencyRating: "",
     files: [],
@@ -86,22 +89,29 @@ const NewApplication = () => {
     }
   }, [applicationId]);
 
+  // Refactored: always map product fields when app/options change
   useEffect(() => {
-    // If application data is passed via navigation, map it into the form
-    if (location.state && location.state.application) {
-      const app = location.state.application;
+    const mapAppToForm = (app) => {
       let mappedProductId = app.productId;
       let mappedModel = app.model;
+      // Use equipmentType directly from backend (now always the display label)
       let mappedEquipmentType = app.equipmentType;
+      let mappedBrand = app.brand;
       let mappedEfficiencyRating = app.efficiencyRating;
+      if (app.product && typeof app.product === "object") {
+        mappedProductId = app.product.id;
+        mappedModel = app.product.modelNumber;
+        if (!mappedEquipmentType)
+          mappedEquipmentType = app.product.type || app.product.description;
+        mappedBrand = app.product.brand;
+      }
       if (options.models && Array.isArray(options.models) && mappedProductId) {
         const foundModel = options.models.find(
           (m) => typeof m === "object" && m.id === mappedProductId
         );
         if (foundModel) {
           mappedModel = foundModel.modelNumber;
-          if (foundModel.type) mappedEquipmentType = foundModel.type;
-          // If you add efficiencyRating to Product in the future, map it here
+          if (foundModel.description) mappedEquipmentType = foundModel.description;
         }
       }
       setForm((prev) => ({
@@ -110,6 +120,7 @@ const NewApplication = () => {
         productId: mappedProductId,
         model: mappedModel,
         equipmentType: mappedEquipmentType,
+        brand: mappedBrand,
         efficiencyRating: mappedEfficiencyRating,
         email: app.email || user?.email || "",
         files: app.files || [],
@@ -117,49 +128,20 @@ const NewApplication = () => {
         isSameAsInstall: app.isSameAsInstall || false,
       }));
       setSameAsInstall(!!app.isSameAsInstall);
+    };
+
+    if (location.state && location.state.application) {
+      mapAppToForm(location.state.application);
     } else if (applicationId) {
-      // If no state, fetch from server
       (async () => {
         try {
           const res = await api.get(`/applications/${applicationId}`);
-          const app = res.data;
-          let mappedProductId = app.productId;
-          let mappedModel = app.model;
-          let mappedEquipmentType = app.equipmentType;
-          let mappedEfficiencyRating = app.efficiencyRating;
-          if (
-            options.models &&
-            Array.isArray(options.models) &&
-            mappedProductId
-          ) {
-            const foundModel = options.models.find(
-              (m) => typeof m === "object" && m.id === mappedProductId
-            );
-            if (foundModel) {
-              mappedModel = foundModel.modelNumber;
-              if (foundModel.type) mappedEquipmentType = foundModel.type;
-              // If you add efficiencyRating to Product in the future, map it here
-            }
-          }
-          setForm((prev) => ({
-            ...prev,
-            ...app,
-            productId: mappedProductId,
-            model: mappedModel,
-            equipmentType: mappedEquipmentType,
-            efficiencyRating: mappedEfficiencyRating,
-            email: app.email || user?.email || "",
-            files: app.files || [],
-            claimNumber: app.claimNumber || app.id || "",
-            isSameAsInstall: app.isSameAsInstall || false,
-          }));
-          setSameAsInstall(!!app.isSameAsInstall);
+          mapAppToForm(res.data);
         } catch (err) {
           console.error("Failed to fetch application:", err);
         }
       })();
     } else if (user) {
-      // If no application data, set from user
       setForm((prev) => ({
         ...prev,
         customerFirstName: user.firstName || "",
@@ -202,9 +184,21 @@ const NewApplication = () => {
     setForm((prev) => ({
       ...prev,
       equipmentType: value,
+      brand: "",
       model: "",
       productId: "",
       efficiencyRating: "",
+    }));
+  };
+
+  // Handler for brand change
+  const handleBrandChange = (e) => {
+    const value = e.target.value;
+    setForm((prev) => ({
+      ...prev,
+      brand: value,
+      model: "",
+      productId: "",
     }));
   };
 
@@ -226,6 +220,32 @@ const NewApplication = () => {
       productId: selected && typeof selected === "object" ? selected.id : value,
     }));
   };
+
+  // Compute brands and filtered models for the selected equipment type
+  const filteredBrands = React.useMemo(() => {
+    if (!form.equipmentType) return [];
+    return [
+      ...new Set(
+        options.models
+          .filter(
+            (m) =>
+              m.type === form.equipmentType ||
+              m.description === form.equipmentType
+          )
+          .map((m) => m.brand)
+      ),
+    ];
+  }, [form.equipmentType, options.models]);
+
+  const filteredModels = React.useMemo(() => {
+    if (!form.equipmentType || !form.brand) return [];
+    return options.models.filter(
+      (m) =>
+        (m.type === form.equipmentType ||
+          m.description === form.equipmentType) &&
+        m.brand === form.brand
+    );
+  }, [form.equipmentType, form.brand, options.models]);
 
   // Validation for step 1 fields (except claimNumber)
   const validateStep1 = () => {
@@ -257,6 +277,7 @@ const NewApplication = () => {
     // Phone number: (123) 456-7890
     else if (!/^\(\d{3}\) \d{3}-\d{4}$/.test(form.phoneNumber))
       newErrors.phoneNumber = "Format: (123) 456-7890";
+    // brand/model validation removed from step 1
     return newErrors;
   };
 
@@ -264,7 +285,10 @@ const NewApplication = () => {
     const newErrors = {};
     if (!form.equipmentType)
       newErrors.equipmentType = "Equipment type is required";
-    if (!form.productId) newErrors.model = "Model is required";
+    if (!form.brand || !form.brand.trim())
+      newErrors.brand = "Brand is required";
+    if (!form.productId || !form.productId.trim())
+      newErrors.model = "Model is required";
     return newErrors;
   };
 
@@ -485,8 +509,13 @@ const NewApplication = () => {
           <EquipmentDetailsStep
             values={form}
             errors={errors}
-            options={options}
+            options={{
+              ...options,
+              brands: filteredBrands,
+              models: filteredModels,
+            }}
             onEquipmentTypeChange={handleEquipmentTypeChange}
+            onBrandChange={handleBrandChange}
             onModelChange={handleModelChange}
             onChange={handleChange}
             onPrev={prevStep}

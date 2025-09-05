@@ -42,8 +42,11 @@ Application.init(
       defaultValue: 'draft',
     },
 
-    // Optional: any freeform notes
-    notes: { type: DataTypes.TEXT, allowNull: true },
+  // Optional: any freeform notes
+  notes: { type: DataTypes.TEXT, allowNull: true },
+
+  // Rebate amount (optional, can be set by admin or logic)
+  rebateAmount: { type: DataTypes.DECIMAL(10,2), allowNull: true },
   },
   {
     sequelize,
