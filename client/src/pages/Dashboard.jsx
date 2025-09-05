@@ -280,9 +280,7 @@ const Dashboard = () => {
                     <div className="mt-4 flex items-center gap-2">
                       {String(app.status).toLowerCase() !== 'submitted' ? (
                         <button onClick={() => handleViewEditApplication(app.id)} className="btn-primary w-full">Resume</button>
-                      ) : (
-                        <button onClick={() => handleViewEditApplication(app.id)} className="btn-secondary w-full">View</button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 ))}
@@ -309,10 +307,8 @@ const Dashboard = () => {
                         <td className="px-4 py-3">{app.updatedAt ? new Date(app.updatedAt).toLocaleDateString() : '—'}</td>
                         <td className="px-4 py-3">
                           {String(app.status).toLowerCase() !== 'submitted' ? (
-                            <button onClick={() => handleViewEditApplication(app.id)} className="btn-primary">View / Edit</button>
-                          ) : (
-                            <button onClick={() => handleViewEditApplication(app.id)} className="btn-secondary">View</button>
-                          )}
+                            <button onClick={() => handleViewEditApplication(app.id)} className="btn-primary">Resume</button>
+                          ) : null}
                         </td>
                       </tr>
                     ))}
