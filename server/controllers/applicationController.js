@@ -66,11 +66,28 @@ exports.getApplication = async (req, res) => {
     where: { id: req.params.id, userId: req.user.id },
     include: [
       { model: ApplicationFile, as: 'files', attributes: ['id', 'url', 'filename', 'mimeType', 'sizeBytes'] },
-      { model: Product, attributes: ['id', 'type', 'modelNumber'] },
+      { model: Product, attributes: ['id', 'type', 'modelNumber', 'description', 'brand', 'energyStarId'] },
     ],
   });
   if (!app) return res.status(404).json({ message: 'Not found' });
-  res.json(app);
+
+  // Standardize: flatten product fields to top-level
+  let appJson = app.toJSON();
+  if (appJson.Product) {
+    appJson.productId = appJson.Product.id;
+    appJson.brand = appJson.Product.brand;
+    appJson.model = appJson.Product.modelNumber;
+    appJson.modelNumber = appJson.Product.modelNumber;
+    // Standardize: equipmentType is always the product description (display label)
+    appJson.equipmentType = appJson.Product.description;
+    appJson.type = appJson.Product.type;
+    appJson.description = appJson.Product.description;
+    appJson.energyStarId = appJson.Product.energyStarId;
+    // Add equipmentType to the Product object for consistency
+    appJson.Product.equipmentType = appJson.Product.description;
+    appJson.product = appJson.Product;
+  }
+  res.json(appJson);
 };
 
 exports.updateApplication = async (req, res) => {
