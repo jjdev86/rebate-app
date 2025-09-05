@@ -19,7 +19,7 @@ exports.register = async (req, res) => {
     user = await User.create({ email, password: hashedPassword });
 
     const payload = { user: { id: user.id } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5m' });
     // Send token in HTTP-only cookie
     res
       .cookie('token', token, {
