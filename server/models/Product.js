@@ -1,6 +1,6 @@
 // server/models/Product.js
-const { DataTypes, Model } = require('sequelize');
-const sequelize = require('../config/database');
+const { DataTypes, Model } = require("sequelize");
+const sequelize = require("../config/database");
 
 class Product extends Model {}
 
@@ -35,11 +35,24 @@ Product.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    eligibilityStart: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    eligibilityEnd: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    defaultRebateCents: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
   },
   {
     sequelize,
-    modelName: 'Product',
-    tableName: 'products',
+    modelName: "Product",
+    tableName: "products",
     timestamps: true,
   }
 );
