@@ -22,14 +22,7 @@ exports.createApplication = async (req, res) => {
 
     const app = await Application.create({
       userId: req.user.id,
-      customerFirstName,
-      customerLastName,
-      installAddress,
-      email,
-      phoneNumber,
-      productId,
-      status: 'submitted', // or 'draft' depending on your flow
-      notes,
+      status: 'draft',
     });
 
     res.status(201).json(app);
@@ -71,24 +64,7 @@ exports.getApplication = async (req, res) => {
     ],
   });
   if (!app) return res.status(404).json({ message: 'Not found' });
-
-  // Standardize: flatten product fields to top-level
-  let appJson = app.toJSON();
-  if (appJson.Product) {
-    appJson.productId = appJson.Product.id;
-    appJson.brand = appJson.Product.brand;
-    appJson.model = appJson.Product.modelNumber;
-    appJson.modelNumber = appJson.Product.modelNumber;
-    // Standardize: equipmentType is always the product description (display label)
-    appJson.equipmentType = appJson.Product.description;
-    appJson.type = appJson.Product.type;
-    appJson.description = appJson.Product.description;
-    appJson.energyStarId = appJson.Product.energyStarId;
-    // Add equipmentType to the Product object for consistency
-    appJson.Product.equipmentType = appJson.Product.description;
-    appJson.product = appJson.Product;
-  }
-  res.json(appJson);
+  res.json(app);
 };
 
 exports.updateApplication = async (req, res) => {
