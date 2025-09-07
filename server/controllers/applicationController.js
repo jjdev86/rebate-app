@@ -1,4 +1,4 @@
-const { Application, ApplicationFile, Product, ApplicationMeasures } = require('../models');
+const { Application, ApplicationFile, Product, ApplicationMeasure } = require('../models');
 const { validationResult } = require('express-validator');
 
 exports.createApplication = async (req, res) => {
@@ -67,6 +67,7 @@ exports.getApplication = async (req, res) => {
     include: [
       { model: ApplicationFile, as: 'files', attributes: ['id', 'url', 'filename', 'mimeType', 'sizeBytes'] },
       { model: Product, attributes: ['id', 'type', 'modelNumber', 'description', 'brand', 'energyStarId', 'defaultRebateCents'] },
+      { model: ApplicationMeasure, as: 'measures' },
     ],
   });
   if (!app) return res.status(404).json({ message: 'Not found' });
