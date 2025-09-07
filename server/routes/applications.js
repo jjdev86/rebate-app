@@ -17,11 +17,11 @@ router.put('/:id', appController.updateApplication);
 router.post('/draft', appController.createDraftApplication);
 
 // NEW endpoints:
-router.post('/applications/:id/measures', appMeasures.postAddMeasure);
-router.put('/applications/:id/measures/:measureId', appMeasures.putUpdateMeasureQty);
-router.delete('/applications/:id/measures/:measureId', appMeasures.deleteMeasure);
+router.post('/:id/measures', appMeasures.postAddMeasure);
+router.put('/:id/measures/:measureId', appMeasures.putUpdateMeasureQty);
+router.delete('/:id/measures/:measureId', appMeasures.deleteMeasure);
 
 // Replace your old GET /applications/:id handler with this one so it includes measures + total
-//router.get('/applications/:id', appMeasures.getApplication);
+// router.get('/:id', appMeasures.getApplication);
 
 module.exports = router;
