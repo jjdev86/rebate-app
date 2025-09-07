@@ -6,6 +6,7 @@ function toApiTotal(cents) {
 }
 
 exports.postAddMeasure = async (req, res) => {
+
   try {
     const { id: applicationId } = req.params;
     const { productId, qty } = req.body;
@@ -17,6 +18,7 @@ exports.postAddMeasure = async (req, res) => {
       ...toApiTotal(totalRebateCents),
     });
   } catch (err) {
+    console.log(err);
     res.status(400).json({ message: err.message || 'Failed to add measure' });
   }
 };
