@@ -15,7 +15,7 @@ async function addMeasure({ applicationId, productId, qty = 1 }) {
   const unit = product.defaultRebateCents || 0;
   const line = unit * qty;
 
-  await ApplicationMeasure.create({
+  const measure = await ApplicationMeasure.create({
     applicationId,
     productId,
     productType: product.type,       // 'HPWH' | 'ST'
@@ -28,7 +28,7 @@ async function addMeasure({ applicationId, productId, qty = 1 }) {
 
   const total = await ApplicationMeasure.sum('lineRebateCents', { where: { applicationId } });
   await Application.update({ totalRebateCents: total || 0 }, { where: { id: applicationId } });
-  return total || 0;
+  return { measure, totalRebateCents: total || 0 };
 }
 
 async function updateMeasureQty({ applicationId, measureId, qty }) {
