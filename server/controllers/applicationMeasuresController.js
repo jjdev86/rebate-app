@@ -6,15 +6,24 @@ function toApiTotal(cents) {
 }
 
 exports.postAddMeasure = async (req, res) => {
-
   try {
     const { id: applicationId } = req.params;
     const { productId, qty } = req.body;
+    // Call addMeasure and get the new measure's id
     const { measure, totalRebateCents } = await addMeasure({ applicationId, productId, qty });
+
+    // Fetch the full measure details (including product info)
+    let fullMeasure = null;
+    if (measure && measure.id) {
+      fullMeasure = await require('../models').ApplicationMeasure.findOne({
+        where: { id: measure.id },
+        include: [{ model: require('../models').Product, as: 'product' }]
+      });
+    }
 
     res.status(201).json({
       message: 'Measure added',
-      measure,
+      measure: fullMeasure || measure,
       ...toApiTotal(totalRebateCents),
     });
   } catch (err) {
