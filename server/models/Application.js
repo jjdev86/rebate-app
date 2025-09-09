@@ -37,13 +37,6 @@ Application.init(
       validate: { is: /^[0-9\-\+\s\(\)]*$/i },
     },
 
-    // Link to product (Heat Pump Water Heater / Thermostats)
-    productId: {
-      type: DataTypes.UUID,
-      allowNull: true,
-      references: { model: "products", key: "id" },
-    },
-
     // Workflow
     status: {
       type: DataTypes.ENUM("draft", "submitted", "approved", "rejected"),
@@ -68,7 +61,6 @@ Application.init(
     timestamps: true,
     indexes: [
       { fields: ["userId"] },
-      { fields: ["productId"] },
       { fields: ["status"] },
     ],
   }
