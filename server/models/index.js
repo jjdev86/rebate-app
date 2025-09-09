@@ -6,7 +6,7 @@ const Product = require('./Product');
 const Application = require('./Application');
 const ApplicationFile = require('./ApplicationFile');
 const ApplicationMeasure = require('./ApplicationMeasure');
-
+const ProductEligibility = require('./ProductEligibility');
 
 
 // Define associations - Documents
@@ -18,11 +18,11 @@ Notification.belongsTo(User, { foreignKey: 'userId' });
 
 // Define associations - Applications ↔ Users & Products
 Application.belongsTo(User, { foreignKey: "userId" });
-Application.belongsTo(Product, { foreignKey: "productId" });
+// Application.belongsTo(Product, { foreignKey: "productId" });
 
 // Define associations - Applications ↔ Users & Products
 User.hasMany(Application, { foreignKey: "userId" });
-Product.hasMany(Application, { foreignKey: "productId" });
+// Product.hasMany(Application, { foreignKey: "productId" });
 
 // Associations with ApplicationFile
 ApplicationFile.belongsTo(Application, { foreignKey: 'applicationId' });
@@ -41,6 +41,10 @@ ApplicationMeasure.belongsTo(Application, { foreignKey: 'applicationId', as: 'ap
 Product.hasMany(ApplicationMeasure, { foreignKey: 'productId', as: 'measures' });
 ApplicationMeasure.belongsTo(Product,   { foreignKey: 'productId', as: 'product' });
 
+const attachRebateTotalHooks = require('./hooks/rebateTotals');
+attachRebateTotalHooks({ Application, ApplicationMeasure });
+
+
 module.exports = {
   sequelize,
   User,
@@ -49,5 +53,6 @@ module.exports = {
   Product,
   Application,
   ApplicationFile,
-  ApplicationMeasure
+  ApplicationMeasure,
+  ProductEligibility,
 };
