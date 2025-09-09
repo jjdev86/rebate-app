@@ -1,36 +1,36 @@
-const { Application, ApplicationFile, Product, ApplicationMeasure } = require('../models');
+const { Application, ApplicationFile, Product, ApplicationMeasure,  } = require('../models');
 const { validationResult } = require('express-validator');
 
-exports.createApplication = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+// exports.createApplication = async (req, res) => {
+//   const errors = validationResult(req);
+//   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  try {
-    const {
-      customerFirstName,
-      customerLastName,
-      installAddress,
-      email,
-      phoneNumber,
-      productId,
-      notes,
-    } = req.body;
+//   try {
+//     const {
+//       customerFirstName,
+//       customerLastName,
+//       installAddress,
+//       email,
+//       phoneNumber,
 
-    // ensure product exists
-    const product = await Product.findByPk(productId);
-    if (!product) return res.status(400).json({ message: 'Invalid productId' });
+//       notes,
+//     } = req.body;
 
-    const app = await Application.create({
-      userId: req.user.id,
-      status: 'draft',
-    });
+//     // ensure product exists
+//     const product = await Product.findByPk(productId);
+//     if (!product) return res.status(400).json({ message: 'Invalid productId' });
 
-    res.status(201).json(app);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Server error');
-  }
-};
+//     const app = await Application.create({
+//       userId: req.user.id,
+//       status: 'draft',
+//     });
+
+//     res.status(201).json(app);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send('Server error');
+//   }
+// };
 
 exports.createDraftApplication = async (req, res) => {
   try {
@@ -59,7 +59,6 @@ exports.getApplication = async (req, res) => {
     where: { id: req.params.id, userId: req.user.id },
     include: [
       { model: ApplicationFile, as: 'files', attributes: ['id', 'url', 'filename', 'mimeType', 'sizeBytes'] },
-      { model: Product, attributes: ['id', 'type', 'modelNumber', 'description', 'brand', 'energyStarId', 'defaultRebateCents'] },
       { model: ApplicationMeasure, as: 'measures' },
     ],
   });
