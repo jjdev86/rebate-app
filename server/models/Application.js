@@ -1,7 +1,8 @@
-const { DataTypes, Model } = require('sequelize');
-const sequelize = require('../config/database');
-const User = require('./User');
-const Product = require('./Product');
+const { DataTypes, Model } = require("sequelize");
+const sequelize = require("../config/database");
+const User = require("./User");
+const Product = require("./Product");
+const ApplicationMeasure = require("./ApplicationMeasure");
 
 class Application extends Model {}
 
@@ -15,57 +16,61 @@ Application.init(
 
     // Customer fields (per your spec)
     customerFirstName: { type: DataTypes.STRING, allowNull: true },
-    customerLastName:  { type: DataTypes.STRING, allowNull: true },
-    installAddress:    { type: DataTypes.STRING, allowNull: true },
-    installZip:        { type: DataTypes.STRING, allowNull: true },
-    installCity:       { type: DataTypes.STRING, allowNull: true },
-    installState:      { type: DataTypes.STRING, allowNull: true },
-    mailingAddress:    { type: DataTypes.STRING, allowNull: true },
-    mailingZip:        { type: DataTypes.STRING, allowNull: true },
-    mailingCity:       { type: DataTypes.STRING, allowNull: true },
-  mailingState:      { type: DataTypes.STRING, allowNull: true },
-  isSameAsInstall:   { type: DataTypes.BOOLEAN, allowNull: true },
-    email:             { type: DataTypes.STRING, allowNull: true, validate: { isEmail: true } },
-    phoneNumber:       { type: DataTypes.STRING, allowNull: true,  validate: { is: /^[0-9\-\+\s\(\)]*$/i } },
-
-
-    // Link to product (Heat Pump Water Heater / Thermostats)
-    productId: {
-      type: DataTypes.UUID,
+    customerLastName: { type: DataTypes.STRING, allowNull: true },
+    installAddress: { type: DataTypes.STRING, allowNull: true },
+    installZip: { type: DataTypes.STRING, allowNull: true },
+    installCity: { type: DataTypes.STRING, allowNull: true },
+    installState: { type: DataTypes.STRING, allowNull: true },
+    mailingAddress: { type: DataTypes.STRING, allowNull: true },
+    mailingZip: { type: DataTypes.STRING, allowNull: true },
+    mailingCity: { type: DataTypes.STRING, allowNull: true },
+    mailingState: { type: DataTypes.STRING, allowNull: true },
+    isSameAsInstall: { type: DataTypes.BOOLEAN, allowNull: true },
+    email: {
+      type: DataTypes.STRING,
       allowNull: true,
-      references: { model: 'products', key: 'id' },
+      validate: { isEmail: true },
+    },
+    phoneNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: { is: /^[0-9\-\+\s\(\)]*$/i },
     },
 
     // Workflow
     status: {
-      type: DataTypes.ENUM('draft', 'submitted', 'approved', 'rejected'),
-      defaultValue: 'draft',
+      type: DataTypes.ENUM("draft", "submitted", "approved", "rejected"),
+      defaultValue: "draft",
     },
 
-  // Optional: any freeform notes
-  notes: { type: DataTypes.TEXT, allowNull: true },
+    // Optional: any freeform notes
+    notes: { type: DataTypes.TEXT, allowNull: true },
 
-  // Rebate amount (optional, can be set by admin or logic)
-  rebateAmount: { type: DataTypes.DECIMAL(10,2), allowNull: true },
+    // Rebate amount (optional, can be set by admin or logic)
+    rebateAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+    totalRebateCents: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
   },
   {
     sequelize,
-    modelName: 'Application',
-    tableName: 'applications',
+    modelName: "Application",
+    tableName: "applications",
     timestamps: true,
     indexes: [
-      { fields: ['userId'] },
-      { fields: ['productId'] },
-      { fields: ['status'] },
+      { fields: ["userId"] },
+      { fields: ["status"] },
     ],
   }
 );
 
-// Associations (define after init)
-Application.belongsTo(User,   { foreignKey: 'userId'   });
-Application.belongsTo(Product,{ foreignKey: 'productId' });
+// // Associations (define after init)
+// Application.belongsTo(User, { foreignKey: "userId" });
+// Application.belongsTo(Product, { foreignKey: "productId" });
 
-User.hasMany(Application,     { foreignKey: 'userId'   });
-Product.hasMany(Application,  { foreignKey: 'productId' });
+// User.hasMany(Application, { foreignKey: "userId" });
+// Product.hasMany(Application, { foreignKey: "productId" });
 
 module.exports = Application;

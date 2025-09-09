@@ -34,8 +34,8 @@ ApplicationFile.init(
   }
 );
 
-// Associations
-ApplicationFile.belongsTo(Application, { foreignKey: 'applicationId' });
-Application.hasMany(ApplicationFile,   { foreignKey: 'applicationId', as: 'files' });
+// // Associations
+// ApplicationFile.belongsTo(Application, { foreignKey: 'applicationId' });
+// Application.hasMany(ApplicationFile,   { foreignKey: 'applicationId', as: 'files' });
 
 module.exports = ApplicationFile;

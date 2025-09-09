@@ -1,0 +1,86 @@
+{
+  "info": {
+    "name": "Application Measures API",
+    "_postman_id": "d2f1c8ab-1234-5678-9012-testmeasures",
+    "description": "Test endpoints for managing application measures with cookie authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Add Measure to Application",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cookie", "value": "token={{authToken}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/applications/{{applicationId}}/measures",
+          "host": ["http://localhost"],
+          "port": "5000",
+          "path": ["applications", "{{applicationId}}", "measures"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"qty\": 1\n}"
+        }
+      }
+    },
+    {
+      "name": "Update Measure Qty",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cookie", "value": "token={{authToken}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/applications/{{applicationId}}/measures/{{measureId}}",
+          "host": ["http://localhost"],
+          "port": "5000",
+          "path": ["applications", "{{applicationId}}", "measures", "{{measureId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"qty\": 2\n}"
+        }
+      }
+    },
+    {
+      "name": "Delete Measure",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Cookie", "value": "token={{authToken}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/applications/{{applicationId}}/measures/{{measureId}}",
+          "host": ["http://localhost"],
+          "port": "5000",
+          "path": ["applications", "{{applicationId}}", "measures", "{{measureId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Application With Measures",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Cookie", "value": "token={{authToken}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/applications/{{applicationId}}",
+          "host": ["http://localhost"],
+          "port": "5000",
+          "path": ["applications", "{{applicationId}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "applicationId", "value": "PUT-YOUR-APPLICATION-ID-HERE" },
+    { "key": "productId", "value": "PUT-YOUR-PRODUCT-ID-HERE" },
+    { "key": "measureId", "value": "PUT-YOUR-MEASURE-ID-HERE" },
+    { "key": "authToken", "value": "PASTE-YOUR-TOKEN-HERE" }
+  ]
+}

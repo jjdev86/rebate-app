@@ -11,6 +11,7 @@ exports.getProducts = async (req, res) => {
     description: p.description,
     brand: p.brand,
     energyStarId: p.energyStarId,
+    defaultRebateCents: p.defaultRebateCents,
   }));
 
   // You can hardcode efficiency ratings here

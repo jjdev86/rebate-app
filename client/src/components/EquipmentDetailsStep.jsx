@@ -67,9 +67,30 @@ const EquipmentDetailsStep = ({ values, errors, options, onEquipmentTypeChange, 
     )}
 
     <div className="bg-[#EAF3FF] text-[#1E2A5A] p-4 rounded mt-4 text-sm">
-      Eligible for a <strong>$500 rebate</strong>
-      <br />
-      Rebates are available for energy-efficient heat pumps
+      {(() => {
+        let rebate = null;
+        if (values.productId && options.models) {
+          const selected = options.models.find(
+            (m) => (typeof m === 'object' && m.id === values.productId)
+          );
+          if (selected && selected.defaultRebateCents != null) {
+            rebate = selected.defaultRebateCents / 100;
+          }
+        }
+        return rebate ? (
+          <>
+            Eligible for a <strong>${rebate} rebate</strong>
+            <br />
+            Rebates are available for energy-efficient equipment
+          </>
+        ) : (
+          <>
+            Eligible for a rebate
+            <br />
+            Rebates are available for energy-efficient equipment
+          </>
+        );
+      })()}
     </div>
 
     <div className="flex justify-between mt-6">
