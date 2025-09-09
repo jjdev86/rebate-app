@@ -8,7 +8,7 @@ const appMeasures = require('../controllers/applicationMeasuresController');
 
 router.use(auth);
 // Apply authentication middleware to all routes in this file
-router.post('/', createApplicationValidation, appController.createApplication);
+router.post('/', createApplicationValidation, appController.createDraftApplication);
 router.get('/', appController.getApplications);
 router.get('/:id', appController.getApplication);
 // Update an application by ID
