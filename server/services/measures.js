@@ -4,7 +4,9 @@ const {
   ApplicationMeasure,
   Product,
   ProductEligibility,
+  sequelize,
 } = require("../models");
+const { Op } = require("sequelize");
 
 async function eligible(productOrId, asOf = new Date()) {
   const productId =
@@ -27,31 +29,58 @@ async function eligible(productOrId, asOf = new Date()) {
 }
 
 async function addMeasure({ applicationId, productId, qty = 1 }) {
+  return await sequelize.transaction(async (t) => {
+    // 1) Validate product & eligibility (unchanged)
+    const product = await Product.findByPk(productId, { transaction: t });
+    if (!product) throw new Error("Product not found");
+    if (!eligible(product))
+      throw new Error("Product not eligible at this time");
 
-  const product = await Product.findByPk(productId);
-  if (!product) throw new Error("Product not found");
-  // check for existing measure for this product in the application
-  const existing = await ApplicationMeasure.findOne({ where: { applicationId, productId } });
-  if (!eligible(product)) throw new Error("Product not eligible at this time");
+    // 2) Check for existing row
+    const existing = await ApplicationMeasure.findOne({
+      where: { applicationId, productId },
+      transaction: t,
+    });
 
-  const unit = product.defaultRebateCents || 0;
-  const line = unit * qty;
+    let measure;
+    let created = false;
 
-  const measure = await ApplicationMeasure.create({
-    applicationId,
-    productId,
-    productType: product.type, // 'HPWH' | 'ST'    productName: product.name,
-    qty,
-    unitRebateCents: unit,
-    lineRebateCents: line,
-    resolvedSource: "product.default",
+    if (existing) {
+      // Do NOT increment qty — idempotent behavior
+      measure = existing;
+    } else {
+      // Create new row
+      const unit = product.defaultRebateCents || 0;
+      const line = unit * qty;
+
+      measure = await ApplicationMeasure.create(
+        {
+          applicationId,
+          productId,
+          productType: product.type,
+          productName: product.name,
+          qty,
+          unitRebateCents: unit,
+          lineRebateCents: line,
+          resolvedSource: "product.default",
+        },
+        { transaction: t }
+      );
+
+      created = true;
+    }
+
+    const total = await ApplicationMeasure.sum("lineRebateCents", {
+      where: { applicationId },
+      transaction: t,
+    });
+    await Application.update(
+      { totalRebateCents: total || 0 },
+      { where: { id: applicationId }, transaction: t }
+    );
+
+    return { measure, totalRebateCents: total || 0, created };
   });
-
-  const app = await Application.findByPk(applicationId, {
-    attributes: ["totalRebateCents"],
-  });
-
-  return { measure, totalRebateCents: app.totalRebateCents || 0 };
 }
 
 async function updateMeasureQty({ applicationId, measureId, qty }) {
